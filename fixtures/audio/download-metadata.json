@@ -1,0 +1,14 @@
+{
+  "bvid": "BV1728bzzEwA",
+  "part": 3,
+  "cid": "31308972765",
+  "trackId": 30232,
+  "codec": "mp4a.40.2",
+  "bandwidth": 63656,
+  "httpStatus": 206,
+  "contentType": "video/mp4",
+  "contentRange": "bytes 0-524287/3121284",
+  "bytesDownloaded": 524288,
+  "videoDuration": 393,
+  "downloadScope": "initial byte range only; not the full audio"
+}

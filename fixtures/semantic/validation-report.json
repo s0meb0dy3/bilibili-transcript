@@ -1,0 +1,82 @@
+{
+  "model": "deepseek-flash",
+  "files": [
+    {
+      "part": 1,
+      "cues": 1347,
+      "paragraphs": 75,
+      "minChars": 67,
+      "medianChars": 186,
+      "maxChars": 320,
+      "fullCoverage": true,
+      "unchangedWords": true,
+      "timeMapping": true,
+      "review": [
+        {
+          "paragraphId": 34,
+          "code": "short",
+          "characters": 67,
+          "message": "短段落供人工检查，未自动合并"
+        }
+      ],
+      "stats": {
+        "calls": 8,
+        "cacheHits": 0,
+        "retries": 1,
+        "failures": 1,
+        "promptTokens": 24685,
+        "completionTokens": 9396,
+        "totalTokens": 34081
+      }
+    },
+    {
+      "part": 2,
+      "cues": 1116,
+      "paragraphs": 57,
+      "minChars": 79,
+      "medianChars": 167,
+      "maxChars": 343,
+      "fullCoverage": true,
+      "unchangedWords": true,
+      "timeMapping": true,
+      "review": [
+        {
+          "paragraphId": 25,
+          "code": "short",
+          "characters": 79,
+          "message": "短段落供人工检查，未自动合并"
+        }
+      ],
+      "stats": {
+        "calls": 7,
+        "cacheHits": 0,
+        "retries": 1,
+        "failures": 1,
+        "promptTokens": 20331,
+        "completionTokens": 7451,
+        "totalTokens": 27782
+      }
+    },
+    {
+      "part": 3,
+      "cues": 197,
+      "paragraphs": 9,
+      "minChars": 91,
+      "medianChars": 229,
+      "maxChars": 277,
+      "fullCoverage": true,
+      "unchangedWords": true,
+      "timeMapping": true,
+      "review": [],
+      "stats": {
+        "calls": 4,
+        "cacheHits": 2,
+        "retries": 3,
+        "failures": 5,
+        "promptTokens": 5985,
+        "completionTokens": 1645,
+        "totalTokens": 7630
+      }
+    }
+  ]
+}

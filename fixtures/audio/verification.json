@@ -1,0 +1,82 @@
+{
+  "samples": [
+    {
+      "file": "BV1728bzzEwA-P3-000-005.wav",
+      "sourceStartSeconds": 0,
+      "sourceEndSeconds": 5,
+      "durationSeconds": 5.0,
+      "sampleRate": 16000,
+      "channels": 1,
+      "sampleFormat": "PCM signed 16-bit",
+      "bytes": 160078,
+      "rmsDbFS": -17.25,
+      "peakDbFS": -5.47,
+      "decodedAndNonSilent": true
+    },
+    {
+      "file": "BV1728bzzEwA-P3-010-025.wav",
+      "sourceStartSeconds": 10,
+      "sourceEndSeconds": 25,
+      "durationSeconds": 15.0,
+      "sampleRate": 16000,
+      "channels": 1,
+      "sampleFormat": "PCM signed 16-bit",
+      "bytes": 480078,
+      "rmsDbFS": -19.59,
+      "peakDbFS": -5.01,
+      "decodedAndNonSilent": true
+    }
+  ],
+  "candidateConversationSelectedBySubtitleTiming": [
+    {
+      "from": 8.82,
+      "to": 10.1,
+      "text": "并购买一组这样的资产"
+    },
+    {
+      "from": 10.1,
+      "to": 11.64,
+      "text": "基本上就不会亏钱"
+    },
+    {
+      "from": 11.64,
+      "to": 12.16,
+      "text": "劳伦"
+    },
+    {
+      "from": 12.16,
+      "to": 17.439,
+      "text": "你认为投资经理最重要的品质是什么"
+    },
+    {
+      "from": 17.559,
+      "to": 18.899,
+      "text": "这是一种性格特质"
+    },
+    {
+      "from": 18.899,
+      "to": 19.859,
+      "text": "而不是智力特质"
+    },
+    {
+      "from": 19.859,
+      "to": 21.899,
+      "text": "这个行业不需要很高的智商"
+    },
+    {
+      "from": 21.899,
+      "to": 24.559,
+      "text": "我的意思是你需要足够的智商从这里到奥马哈市中心"
+    },
+    {
+      "from": 24.559,
+      "to": 28.79,
+      "text": "但你不需要会下三维国际象棋"
+    }
+  ],
+  "speakerCountNotVerified": true,
+  "modelUploadPerformed": false,
+  "notes": [
+    "5-second sample uses timestamp-aligned resampling to preserve the initial AAC timeline gap."
+  ]
+}

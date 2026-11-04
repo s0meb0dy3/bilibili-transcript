@@ -1,0 +1,1588 @@
+{
+  "font_size": 0.4,
+  "font_color": "#FFFFFF",
+  "background_alpha": 0.5,
+  "background_color": "#9C27B0",
+  "Stroke": "none",
+  "type": "AIsubtitle",
+  "lang": "zh",
+  "version": "eng-1.2.0-Index-johns-pen-lite",
+  "body": [
+    {
+      "content": "投资的第一条规则就是不要亏损",
+      "from": 0.04,
+      "location": 2,
+      "music": 0.0,
+      "sid": 1,
+      "to": 2.1
+    },
+    {
+      "content": "投资的第二条规则就是不要忘记第一条规则",
+      "from": 2.1,
+      "location": 2,
+      "music": 0.0,
+      "sid": 2,
+      "to": 4.48
+    },
+    {
+      "content": "这就是所有规则的全部内容",
+      "from": 4.48,
+      "location": 2,
+      "music": 0.0,
+      "sid": 3,
+      "to": 5.58
+    },
+    {
+      "content": "我的意思是如果你以远低于",
+      "from": 5.58,
+      "location": 2,
+      "music": 0.0,
+      "sid": 4,
+      "to": 8.18
+    },
+    {
+      "content": "其实际价值的价格买入",
+      "from": 8.18,
+      "location": 2,
+      "music": 0.0,
+      "sid": 5,
+      "to": 8.82
+    },
+    {
+      "content": "并购买一组这样的资产",
+      "from": 8.82,
+      "location": 2,
+      "music": 0.0,
+      "sid": 6,
+      "to": 10.1
+    },
+    {
+      "content": "基本上就不会亏钱",
+      "from": 10.1,
+      "location": 2,
+      "music": 0.0,
+      "sid": 7,
+      "to": 11.64
+    },
+    {
+      "content": "劳伦",
+      "from": 11.64,
+      "location": 2,
+      "music": 0.0,
+      "sid": 8,
+      "to": 12.16
+    },
+    {
+      "content": "你认为投资经理最重要的品质是什么",
+      "from": 12.16,
+      "location": 2,
+      "music": 0.0,
+      "sid": 9,
+      "to": 17.439
+    },
+    {
+      "content": "这是一种性格特质",
+      "from": 17.559,
+      "location": 2,
+      "music": 0.0,
+      "sid": 10,
+      "to": 18.899
+    },
+    {
+      "content": "而不是智力特质",
+      "from": 18.899,
+      "location": 2,
+      "music": 0.0,
+      "sid": 11,
+      "to": 19.859
+    },
+    {
+      "content": "这个行业不需要很高的智商",
+      "from": 19.859,
+      "location": 2,
+      "music": 0.0,
+      "sid": 12,
+      "to": 21.899
+    },
+    {
+      "content": "我的意思是你需要足够的智商从这里到奥马哈市中心",
+      "from": 21.899,
+      "location": 2,
+      "music": 0.0,
+      "sid": 13,
+      "to": 24.559
+    },
+    {
+      "content": "但你不需要会下三维国际象棋",
+      "from": 24.559,
+      "location": 2,
+      "music": 0.0,
+      "sid": 14,
+      "to": 28.79
+    },
+    {
+      "content": "或类似的事情",
+      "from": 31.41,
+      "location": 2,
+      "music": 0.0,
+      "sid": 15,
+      "to": 32.39
+    },
+    {
+      "content": "你需要稳定的性格",
+      "from": 32.39,
+      "location": 2,
+      "music": 0.0,
+      "sid": 16,
+      "to": 36.309
+    },
+    {
+      "content": "你需要良好的 temperament",
+      "from": 36.309,
+      "location": 2,
+      "music": 0.0,
+      "sid": 17,
+      "to": 37.819
+    },
+    {
+      "content": "既不因随大流获得快感",
+      "from": 37.819,
+      "location": 2,
+      "music": 0.0,
+      "sid": 18,
+      "to": 42.539
+    },
+    {
+      "content": "也不因逆大流感到愉悦",
+      "from": 42.539,
+      "location": 2,
+      "music": 0.0,
+      "sid": 19,
+      "to": 44.779
+    },
+    {
+      "content": "因为这不是需要投票的生意",
+      "from": 44.779,
+      "location": 2,
+      "music": 0.0,
+      "sid": 20,
+      "to": 46.49
+    },
+    {
+      "content": "这是一项需要思考的生意",
+      "from": 46.49,
+      "location": 2,
+      "music": 0.0,
+      "sid": 21,
+      "to": 49.77
+    },
+    {
+      "content": "本·格雷厄姆会说你不是对或错",
+      "from": 49.77,
+      "location": 2,
+      "music": 0.0,
+      "sid": 22,
+      "to": 51.8
+    },
+    {
+      "content": "因为一千个人赞同你",
+      "from": 51.8,
+      "location": 2,
+      "music": 0.0,
+      "sid": 23,
+      "to": 53.0
+    },
+    {
+      "content": "你不是对或错",
+      "from": 53.0,
+      "location": 2,
+      "music": 0.0,
+      "sid": 24,
+      "to": 54.52
+    },
+    {
+      "content": "因为一千个人反对你",
+      "from": 54.52,
+      "location": 2,
+      "music": 0.0,
+      "sid": 25,
+      "to": 54.96
+    },
+    {
+      "content": "你才是对的",
+      "from": 54.96,
+      "location": 2,
+      "music": 0.0,
+      "sid": 26,
+      "to": 56.76
+    },
+    {
+      "content": "因为你的事实和逻辑正确",
+      "from": 56.76,
+      "location": 2,
+      "music": 0.0,
+      "sid": 27,
+      "to": 57.26
+    },
+    {
+      "content": "沃伦",
+      "from": 57.26,
+      "location": 2,
+      "music": 0.0,
+      "sid": 28,
+      "to": 58.1
+    },
+    {
+      "content": "你有什么不同",
+      "from": 58.1,
+      "location": 2,
+      "music": 0.0,
+      "sid": 29,
+      "to": 59.17
+    },
+    {
+      "content": "市场上90%的基金经理",
+      "from": 59.17,
+      "location": 2,
+      "music": 0.0,
+      "sid": 30,
+      "to": 62.629
+    },
+    {
+      "content": "当然",
+      "from": 62.629,
+      "location": 2,
+      "music": 0.0,
+      "sid": 31,
+      "to": 63.149
+    },
+    {
+      "content": "大多数专业投资者关注股票未来一两年的表现",
+      "from": 63.149,
+      "location": 2,
+      "music": 0.0,
+      "sid": 32,
+      "to": 67.109
+    },
+    {
+      "content": "他们拥有各种",
+      "from": 67.109,
+      "location": 2,
+      "music": 0.0,
+      "sid": 33,
+      "to": 68.349
+    },
+    {
+      "content": "各种复杂的",
+      "from": 68.349,
+      "location": 2,
+      "music": 0.0,
+      "sid": 34,
+      "to": 71.59
+    },
+    {
+      "content": "分析方法",
+      "from": 74.15,
+      "location": 2,
+      "music": 0.0,
+      "sid": 35,
+      "to": 76.21
+    },
+    {
+      "content": "但他们并不真正把自己视为企业所有者",
+      "from": 76.21,
+      "location": 2,
+      "music": 0.0,
+      "sid": 36,
+      "to": 80.19
+    },
+    {
+      "content": "判断是否从价值角度投资的真正考验是",
+      "from": 80.19,
+      "location": 2,
+      "music": 0.0,
+      "sid": 37,
+      "to": 84.31
+    },
+    {
+      "content": "你是否在意",
+      "from": 84.31,
+      "location": 2,
+      "music": 0.0,
+      "sid": 38,
+      "to": 85.83
+    },
+    {
+      "content": "明天股市是否开放",
+      "from": 85.83,
+      "location": 2,
+      "music": 0.0,
+      "sid": 39,
+      "to": 87.53
+    },
+    {
+      "content": "如果你在证券上做了优质投资",
+      "from": 87.53,
+      "location": 2,
+      "music": 0.0,
+      "sid": 40,
+      "to": 90.39
+    },
+    {
+      "content": "即使股市关闭五年也不会受影响",
+      "from": 90.39,
+      "location": 2,
+      "music": 0.0,
+      "sid": 41,
+      "to": 93.23
+    },
+    {
+      "content": "行情板告诉我的只有价格",
+      "from": 93.23,
+      "location": 2,
+      "music": 0.0,
+      "sid": 42,
+      "to": 95.22
+    },
+    {
+      "content": "我可以查看价格",
+      "from": 95.22,
+      "location": 2,
+      "music": 0.0,
+      "sid": 43,
+      "to": 96.54
+    },
+    {
+      "content": "偶尔看看价格是否异常低廉或过高",
+      "from": 96.54,
+      "location": 2,
+      "music": 0.0,
+      "sid": 44,
+      "to": 100.62
+    },
+    {
+      "content": "但价格无法告诉我企业的情况",
+      "from": 100.62,
+      "location": 2,
+      "music": 0.0,
+      "sid": 45,
+      "to": 104.37
+    },
+    {
+      "content": "企业",
+      "from": 104.37,
+      "location": 2,
+      "music": 0.0,
+      "sid": 46,
+      "to": 105.83
+    },
+    {
+      "content": "企业的数据能反映企业状况",
+      "from": 106.89,
+      "location": 2,
+      "music": 0.0,
+      "sid": 47,
+      "to": 109.43
+    },
+    {
+      "content": "但股价无法反映企业情况",
+      "from": 109.43,
+      "location": 2,
+      "music": 0.0,
+      "sid": 48,
+      "to": 111.71
+    },
+    {
+      "content": "我宁愿先评估企业价值",
+      "from": 111.71,
+      "location": 2,
+      "music": 0.0,
+      "sid": 49,
+      "to": 116.11
+    },
+    {
+      "content": "甚至不知道价格",
+      "from": 116.11,
+      "location": 2,
+      "music": 0.0,
+      "sid": 50,
+      "to": 117.74
+    },
+    {
+      "content": "所以我不会被价格影响我的估值判断",
+      "from": 117.74,
+      "location": 2,
+      "music": 0.0,
+      "sid": 51,
+      "to": 121.2
+    },
+    {
+      "content": "然后回头看看价格是否严重偏离",
+      "from": 121.2,
+      "location": 2,
+      "music": 0.0,
+      "sid": 52,
+      "to": 123.74
+    },
+    {
+      "content": "我的价值判断",
+      "from": 123.74,
+      "location": 2,
+      "music": 0.0,
+      "sid": 53,
+      "to": 125.44
+    },
+    {
+      "content": "巴菲特选择留在这个世界",
+      "from": 125.44,
+      "location": 2,
+      "music": 0.0,
+      "sid": 54,
+      "to": 127.62
+    },
+    {
+      "content": "奥马哈内布拉斯加",
+      "from": 127.62,
+      "location": 2,
+      "music": 0.0,
+      "sid": 55,
+      "to": 129.3
+    },
+    {
+      "content": "玉米田就在市中心几分钟路程",
+      "from": 129.3,
+      "location": 2,
+      "music": 0.0,
+      "sid": 56,
+      "to": 132.31
+    },
+    {
+      "content": "如今奥马哈是个不错的小镇",
+      "from": 132.31,
+      "location": 2,
+      "music": 0.0,
+      "sid": 57,
+      "to": 133.95
+    },
+    {
+      "content": "但没人说它是世界金融中心",
+      "from": 133.95,
+      "location": 2,
+      "music": 0.0,
+      "sid": 58,
+      "to": 136.25
+    },
+    {
+      "content": "如果你是唯一一群咆哮的野牛其实四足行走",
+      "from": 136.25,
+      "location": 2,
+      "music": 0.0,
+      "sid": 59,
+      "to": 140.2
+    },
+    {
+      "content": "你不觉得奥马哈在投资界有点偏僻吗",
+      "from": 140.2,
+      "location": 2,
+      "music": 0.0,
+      "sid": 60,
+      "to": 144.94
+    },
+    {
+      "content": "嗯",
+      "from": 144.94,
+      "location": 2,
+      "music": 0.0,
+      "sid": 61,
+      "to": 145.4
+    },
+    {
+      "content": "相信或不信",
+      "from": 145.4,
+      "location": 2,
+      "music": 0.0,
+      "sid": 62,
+      "to": 146.519
+    },
+    {
+      "content": "这里收到很多邮件",
+      "from": 146.519,
+      "location": 2,
+      "music": 0.0,
+      "sid": 63,
+      "to": 147.499
+    },
+    {
+      "content": "呃",
+      "from": 147.499,
+      "location": 2,
+      "music": 0.0,
+      "sid": 64,
+      "to": 148.179
+    },
+    {
+      "content": "我们收到各种期刊",
+      "from": 148.179,
+      "location": 2,
+      "music": 0.0,
+      "sid": 65,
+      "to": 149.159
+    },
+    {
+      "content": "并获取所有决策所需的信息",
+      "from": 149.159,
+      "location": 2,
+      "music": 0.0,
+      "sid": 66,
+      "to": 150.919
+    },
+    {
+      "content": "与华尔街不同",
+      "from": 150.919,
+      "location": 2,
+      "music": 0.0,
+      "sid": 67,
+      "to": 152.59
+    },
+    {
+      "content": "你会发现",
+      "from": 152.59,
+      "location": 2,
+      "music": 0.0,
+      "sid": 68,
+      "to": 152.95
+    },
+    {
+      "content": "我们没有五十人围过来耳语",
+      "from": 152.95,
+      "location": 2,
+      "music": 0.0,
+      "sid": 69,
+      "to": 155.35
+    },
+    {
+      "content": "说我们应该今天做这做那",
+      "from": 155.35,
+      "location": 2,
+      "music": 0.0,
+      "sid": 70,
+      "to": 157.509
+    },
+    {
+      "content": "你是否欣赏这种缺乏刺激",
+      "from": 157.509,
+      "location": 2,
+      "music": 0.0,
+      "sid": 71,
+      "to": 159.609
+    },
+    {
+      "content": "就像这里",
+      "from": 159.609,
+      "location": 2,
+      "music": 0.0,
+      "sid": 72,
+      "to": 160.029
+    },
+    {
+      "content": "我喜欢这种缺乏刺激",
+      "from": 160.029,
+      "location": 2,
+      "music": 0.0,
+      "sid": 73,
+      "to": 161.249
+    },
+    {
+      "content": "我们有事实",
+      "from": 161.249,
+      "location": 2,
+      "music": 0.0,
+      "sid": 74,
+      "to": 161.809
+    },
+    {
+      "content": "这里没有干扰",
+      "from": 161.809,
+      "location": 2,
+      "music": 0.0,
+      "sid": 75,
+      "to": 163.21
+    },
+    {
+      "content": "你怎么能远离华尔街",
+      "from": 163.73,
+      "location": 2,
+      "music": 0.0,
+      "sid": 76,
+      "to": 165.83
+    },
+    {
+      "content": "嗯",
+      "from": 165.83,
+      "location": 2,
+      "music": 0.0,
+      "sid": 77,
+      "to": 166.33
+    },
+    {
+      "content": "如果我在华尔街",
+      "from": 166.33,
+      "location": 2,
+      "music": 0.0,
+      "sid": 78,
+      "to": 167.29
+    },
+    {
+      "content": "可能早就被过度刺激了",
+      "from": 167.29,
+      "location": 2,
+      "music": 0.0,
+      "sid": 79,
+      "to": 172.82
+    },
+    {
+      "content": "你会听到很多消息",
+      "from": 172.82,
+      "location": 2,
+      "music": 0.0,
+      "sid": 80,
+      "to": 177.969
+    },
+    {
+      "content": "你可能会",
+      "from": 177.969,
+      "location": 2,
+      "music": 0.0,
+      "sid": 81,
+      "to": 179.049
+    },
+    {
+      "content": "缩短专注力",
+      "from": 179.049,
+      "location": 2,
+      "music": 0.0,
+      "sid": 82,
+      "to": 182.889
+    },
+    {
+      "content": "短期专注不利于长期收益",
+      "from": 182.889,
+      "location": 2,
+      "music": 0.0,
+      "sid": 83,
+      "to": 186.38
+    },
+    {
+      "content": "而我只需专注企业价值",
+      "from": 186.38,
+      "location": 2,
+      "music": 0.0,
+      "sid": 84,
+      "to": 189.599
+    },
+    {
+      "content": "无需在华盛顿",
+      "from": 189.599,
+      "location": 2,
+      "music": 0.0,
+      "sid": 85,
+      "to": 193.54
+    },
+    {
+      "content": "判断华盛顿邮报价值",
+      "from": 193.54,
+      "location": 2,
+      "music": 0.0,
+      "sid": 86,
+      "to": 194.74
+    },
+    {
+      "content": "无需在纽约",
+      "from": 194.74,
+      "location": 2,
+      "music": 0.0,
+      "sid": 87,
+      "to": 196.86
+    },
+    {
+      "content": "评估其他公司价值",
+      "from": 196.86,
+      "location": 2,
+      "music": 0.0,
+      "sid": 88,
+      "to": 198.26
+    },
+    {
+      "content": "这纯粹是",
+      "from": 198.26,
+      "location": 2,
+      "music": 0.0,
+      "sid": 89,
+      "to": 199.76
+    },
+    {
+      "content": "这种思维过程越少干扰",
+      "from": 199.76,
+      "location": 2,
+      "music": 0.0,
+      "sid": 90,
+      "to": 203.34
+    },
+    {
+      "content": "对你越好",
+      "from": 203.34,
+      "location": 2,
+      "music": 0.0,
+      "sid": 91,
+      "to": 204.58
+    },
+    {
+      "content": "什么是思维过程",
+      "from": 204.58,
+      "location": 2,
+      "music": 0.0,
+      "sid": 92,
+      "to": 205.88
+    },
+    {
+      "content": "思维过程是",
+      "from": 205.88,
+      "location": 2,
+      "music": 0.0,
+      "sid": 93,
+      "to": 207.74
+    },
+    {
+      "content": "定义你的水平",
+      "from": 209.31,
+      "location": 2,
+      "music": 0.0,
+      "sid": 94,
+      "to": 210.77
+    },
+    {
+      "content": "界定专业领域并评估企业价值",
+      "from": 210.77,
+      "location": 2,
+      "music": 0.0,
+      "sid": 95,
+      "to": 213.35
+    },
+    {
+      "content": "在专业领域内",
+      "from": 214.51,
+      "location": 2,
+      "music": 0.0,
+      "sid": 96,
+      "to": 217.75
+    },
+    {
+      "content": "寻找以最",
+      "from": 217.75,
+      "location": 2,
+      "music": 0.0,
+      "sid": 97,
+      "to": 219.79
+    },
+    {
+      "content": "最接近价值的低价出售",
+      "from": 219.79,
+      "location": 2,
+      "music": 0.0,
+      "sid": 98,
+      "to": 222.0
+    },
+    {
+      "content": "还有很多我不擅长评估的事物",
+      "from": 222.0,
+      "location": 2,
+      "music": 0.0,
+      "sid": 99,
+      "to": 224.36
+    },
+    {
+      "content": "但有几个是我能真正欣赏的",
+      "from": 224.36,
+      "location": 2,
+      "music": 0.0,
+      "sid": 100,
+      "to": 226.34
+    },
+    {
+      "content": "你有没有买过科技公司",
+      "from": 226.34,
+      "location": 2,
+      "music": 0.0,
+      "sid": 101,
+      "to": 228.22
+    },
+    {
+      "content": "没有",
+      "from": 228.22,
+      "location": 2,
+      "music": 0.0,
+      "sid": 102,
+      "to": 228.64
+    },
+    {
+      "content": "在三十年的投资生涯中我真的没买过",
+      "from": 228.64,
+      "location": 2,
+      "music": 0.0,
+      "sid": 103,
+      "to": 231.36
+    },
+    {
+      "content": "一个都没买过",
+      "from": 231.36,
+      "location": 2,
+      "music": 0.0,
+      "sid": 104,
+      "to": 231.82
+    },
+    {
+      "content": "我对这些都不太了解",
+      "from": 231.82,
+      "location": 2,
+      "music": 0.0,
+      "sid": 105,
+      "to": 233.48
+    },
+    {
+      "content": "所以你从未持有过",
+      "from": 233.48,
+      "location": 2,
+      "music": 0.0,
+      "sid": 106,
+      "to": 234.76
+    },
+    {
+      "content": "例如",
+      "from": 234.76,
+      "location": 2,
+      "music": 0.0,
+      "sid": 107,
+      "to": 235.34
+    },
+    {
+      "content": "国际商用机器公司",
+      "from": 235.34,
+      "location": 2,
+      "music": 0.0,
+      "sid": 108,
+      "to": 235.92
+    },
+    {
+      "content": "我们从未持有过IBM公司",
+      "from": 235.92,
+      "location": 2,
+      "music": 0.0,
+      "sid": 109,
+      "to": 237.74
+    },
+    {
+      "content": "我是说那种令人瞩目的公司",
+      "from": 237.74,
+      "location": 2,
+      "music": 0.0,
+      "sid": 110,
+      "to": 239.12
+    },
+    {
+      "content": "但我确实不了解",
+      "from": 239.12,
+      "location": 2,
+      "music": 0.0,
+      "sid": 111,
+      "to": 239.84
+    },
+    {
+      "content": "IBM",
+      "from": 239.84,
+      "location": 2,
+      "music": 0.0,
+      "sid": 112,
+      "to": 240.74
+    },
+    {
+      "content": "而这场技术革命正在发生",
+      "from": 240.74,
+      "location": 2,
+      "music": 0.0,
+      "sid": 113,
+      "to": 244.66
+    },
+    {
+      "content": "你却要错过参与机会",
+      "from": 244.66,
+      "location": 2,
+      "music": 0.0,
+      "sid": 114,
+      "to": 246.06
+    },
+    {
+      "content": "就这样从我身边溜走了",
+      "from": 246.06,
+      "location": 2,
+      "music": 0.0,
+      "sid": 115,
+      "to": 247.49
+    },
+    {
+      "content": "这样你同意吗",
+      "from": 247.49,
+      "location": 2,
+      "music": 0.0,
+      "sid": 116,
+      "to": 248.61
+    },
+    {
+      "content": "这对我来说没问题",
+      "from": 248.61,
+      "location": 2,
+      "music": 0.0,
+      "sid": 117,
+      "to": 249.85
+    },
+    {
+      "content": "我并不需要",
+      "from": 249.85,
+      "location": 2,
+      "music": 0.0,
+      "sid": 118,
+      "to": 251.01
+    },
+    {
+      "content": "不必在每个领域赚钱",
+      "from": 251.01,
+      "location": 2,
+      "music": 0.0,
+      "sid": 119,
+      "to": 252.47
+    },
+    {
+      "content": "我也不知道可可豆会怎样",
+      "from": 252.47,
+      "location": 2,
+      "music": 0.0,
+      "sid": 120,
+      "to": 254.61
+    },
+    {
+      "content": "我确实不懂",
+      "from": 254.61,
+      "location": 2,
+      "music": 0.0,
+      "sid": 121,
+      "to": 255.13
+    },
+    {
+      "content": "你知道的",
+      "from": 255.13,
+      "location": 2,
+      "music": 0.0,
+      "sid": 122,
+      "to": 255.53
+    },
+    {
+      "content": "我对很多事情都不了解",
+      "from": 255.53,
+      "location": 2,
+      "music": 0.0,
+      "sid": 123,
+      "to": 257.41
+    },
+    {
+      "content": "这可能不太好",
+      "from": 257.41,
+      "location": 2,
+      "music": 0.0,
+      "sid": 124,
+      "to": 259.15
+    },
+    {
+      "content": "但为什么我要了解所有这些",
+      "from": 259.15,
+      "location": 2,
+      "music": 0.0,
+      "sid": 125,
+      "to": 261.479
+    },
+    {
+      "content": "我都没花太多精力研究",
+      "from": 261.479,
+      "location": 2,
+      "music": 0.0,
+      "sid": 126,
+      "to": 262.459
+    },
+    {
+      "content": "在证券行业",
+      "from": 262.459,
+      "location": 2,
+      "music": 0.0,
+      "sid": 127,
+      "to": 264.169
+    },
+    {
+      "content": "每天都会向你展示数千家美国大公司的机会",
+      "from": 264.169,
+      "location": 2,
+      "music": 0.0,
+      "sid": 128,
+      "to": 269.269
+    },
+    {
+      "content": "价格每日波动",
+      "from": 269.269,
+      "location": 2,
+      "music": 0.0,
+      "sid": 129,
+      "to": 272.31
+    },
+    {
+      "content": "你无需做出任何决定",
+      "from": 272.31,
+      "location": 2,
+      "music": 0.0,
+      "sid": 130,
+      "to": 273.97
+    },
+    {
+      "content": "必须保持完全自主",
+      "from": 273.97,
+      "location": 2,
+      "music": 0.0,
+      "sid": 131,
+      "to": 276.49
+    },
+    {
+      "content": "这里没有被迫的选择",
+      "from": 276.49,
+      "location": 2,
+      "music": 0.0,
+      "sid": 132,
+      "to": 279.05
+    },
+    {
+      "content": "投手只是不断投球给你",
+      "from": 279.05,
+      "location": 2,
+      "music": 0.0,
+      "sid": 133,
+      "to": 281.57
+    },
+    {
+      "content": "如果你真的在打棒球",
+      "from": 281.57,
+      "location": 2,
+      "music": 0.0,
+      "sid": 134,
+      "to": 284.01
+    },
+    {
+      "content": "球必须落在膝盖和肩膀之间",
+      "from": 284.01,
+      "location": 2,
+      "music": 0.0,
+      "sid": 135,
+      "to": 285.31
+    },
+    {
+      "content": "你必须挥棒",
+      "from": 285.31,
+      "location": 2,
+      "music": 0.0,
+      "sid": 136,
+      "to": 285.97
+    },
+    {
+      "content": "或者被判定三振出局",
+      "from": 285.97,
+      "location": 2,
+      "music": 0.0,
+      "sid": 137,
+      "to": 286.97
+    },
+    {
+      "content": "如果太多球被判定",
+      "from": 286.97,
+      "location": 2,
+      "music": 0.0,
+      "sid": 138,
+      "to": 287.77
+    },
+    {
+      "content": "我知道你在证券行业",
+      "from": 287.77,
+      "location": 2,
+      "music": 0.0,
+      "sid": 139,
+      "to": 290.419
+    },
+    {
+      "content": "他们向你抛出USS钢铁公司25美元",
+      "from": 290.419,
+      "location": 2,
+      "music": 0.0,
+      "sid": 140,
+      "to": 293.75
+    },
+    {
+      "content": "又抛出通用汽车68美元",
+      "from": 293.75,
+      "location": 2,
+      "music": 0.0,
+      "sid": 141,
+      "to": 295.25
+    },
+    {
+      "content": "你无需挥棒任何一支",
+      "from": 295.25,
+      "location": 2,
+      "music": 0.0,
+      "sid": 142,
+      "to": 296.71
+    },
+    {
+      "content": "这些可能是绝佳机会",
+      "from": 296.71,
+      "location": 2,
+      "music": 0.0,
+      "sid": 143,
+      "to": 298.73
+    },
+    {
+      "content": "但如果你不了解",
+      "from": 298.73,
+      "location": 2,
+      "music": 0.0,
+      "sid": 144,
+      "to": 299.57
+    },
+    {
+      "content": "你可以选择不挥棒静静观察",
+      "from": 299.57,
+      "location": 2,
+      "music": 0.0,
+      "sid": 145,
+      "to": 303.16
+    },
+    {
+      "content": "最终你会遇到一个",
+      "from": 303.16,
+      "location": 2,
+      "music": 0.0,
+      "sid": 146,
+      "to": 304.7
+    },
+    {
+      "content": "精准击中的机会",
+      "from": 304.7,
+      "location": 2,
+      "music": 0.0,
+      "sid": 147,
+      "to": 305.36
+    },
+    {
+      "content": "你真正理解的标的",
+      "from": 305.36,
+      "location": 2,
+      "music": 0.0,
+      "sid": 148,
+      "to": 306.36
+    },
+    {
+      "content": "然后你挥棒击球",
+      "from": 306.36,
+      "location": 2,
+      "music": 0.0,
+      "sid": 149,
+      "to": 307.08
+    },
+    {
+      "content": "所以你可能六个月都无法操作",
+      "from": 307.08,
+      "location": 2,
+      "music": 0.0,
+      "sid": 150,
+      "to": 309.5
+    },
+    {
+      "content": "你可能两年都无法操作",
+      "from": 309.5,
+      "location": 2,
+      "music": 0.0,
+      "sid": 151,
+      "to": 310.98
+    },
+    {
+      "content": "这不是很无聊吗",
+      "from": 310.98,
+      "location": 2,
+      "music": 0.0,
+      "sid": 152,
+      "to": 312.72
+    },
+    {
+      "content": "这会让大多数人感到无聊",
+      "from": 312.72,
+      "location": 2,
+      "music": 0.0,
+      "sid": 153,
+      "to": 313.8
+    },
+    {
+      "content": "而无聊确实是大多数职业基金经理面临的问题",
+      "from": 313.8,
+      "location": 2,
+      "music": 0.0,
+      "sid": 154,
+      "to": 319.5
+    },
+    {
+      "content": "如果他们",
+      "from": 319.5,
+      "location": 2,
+      "music": 0.0,
+      "sid": 155,
+      "to": 319.92
+    },
+    {
+      "content": "如果他们",
+      "from": 319.92,
+      "location": 2,
+      "music": 0.0,
+      "sid": 156,
+      "to": 320.3
+    },
+    {
+      "content": "如果他们试图完全退出或观望",
+      "from": 320.3,
+      "location": 2,
+      "music": 0.0,
+      "sid": 157,
+      "to": 322.64
+    },
+    {
+      "content": "他们不仅会感到坐立不安",
+      "from": 322.64,
+      "location": 2,
+      "music": 0.0,
+      "sid": 158,
+      "to": 325.06
+    },
+    {
+      "content": "但客户们会开始叫喊要求行动",
+      "from": 325.06,
+      "location": 2,
+      "music": 0.0,
+      "sid": 159,
+      "to": 326.98
+    },
+    {
+      "content": "操作",
+      "from": 326.98,
+      "location": 2,
+      "music": 0.0,
+      "sid": 160,
+      "to": 327.22
+    },
+    {
+      "content": "你这懒鬼",
+      "from": 327.22,
+      "location": 2,
+      "music": 0.0,
+      "sid": 161,
+      "to": 327.74
+    },
+    {
+      "content": "你知道从观众席看",
+      "from": 327.74,
+      "location": 2,
+      "music": 0.0,
+      "sid": 162,
+      "to": 328.88
+    },
+    {
+      "content": "这对人们来说非常困难",
+      "from": 328.88,
+      "location": 2,
+      "music": 0.0,
+      "sid": 163,
+      "to": 331.72
+    },
+    {
+      "content": "你的方法看起来如此简单",
+      "from": 331.72,
+      "location": 2,
+      "music": 0.0,
+      "sid": 164,
+      "to": 334.63
+    },
+    {
+      "content": "为什么大家不都这么做呢",
+      "from": 334.75,
+      "location": 2,
+      "music": 0.0,
+      "sid": 165,
+      "to": 336.27
+    },
+    {
+      "content": "我想",
+      "from": 336.27,
+      "location": 2,
+      "music": 0.0,
+      "sid": 166,
+      "to": 336.59
+    },
+    {
+      "content": "部分原因在于它太过简单，以至于学术界",
+      "from": 336.59,
+      "location": 2,
+      "music": 0.0,
+      "sid": 167,
+      "to": 339.71
+    },
+    {
+      "content": "例如",
+      "from": 339.71,
+      "location": 2,
+      "music": 0.0,
+      "sid": 168,
+      "to": 340.64
+    },
+    {
+      "content": "专注于各种变量",
+      "from": 340.64,
+      "location": 2,
+      "music": 0.0,
+      "sid": 169,
+      "to": 343.67
+    },
+    {
+      "content": "各种变量",
+      "from": 343.67,
+      "location": 2,
+      "music": 0.0,
+      "sid": 170,
+      "to": 345.09
+    },
+    {
+      "content": "部分原因在于学术界",
+      "from": 345.09,
+      "location": 2,
+      "music": 0.0,
+      "sid": 171,
+      "to": 346.23
+    },
+    {
+      "content": "你是说教授们",
+      "from": 346.23,
+      "location": 2,
+      "music": 0.0,
+      "sid": 172,
+      "to": 347.31
+    },
+    {
+      "content": "没错",
+      "from": 347.31,
+      "location": 2,
+      "music": 0.0,
+      "sid": 173,
+      "to": 347.83
+    },
+    {
+      "content": "是的",
+      "from": 347.83,
+      "location": 2,
+      "music": 0.0,
+      "sid": 174,
+      "to": 348.19
+    },
+    {
+      "content": "数据在商学院里",
+      "from": 348.19,
+      "location": 2,
+      "music": 0.0,
+      "sid": 175,
+      "to": 349.86
+    },
+    {
+      "content": "当然数据存在",
+      "from": 349.86,
+      "location": 2,
+      "music": 0.0,
+      "sid": 176,
+      "to": 351.1
+    },
+    {
+      "content": "所以他们研究周二买入周五卖出是否更好",
+      "from": 351.1,
+      "location": 2,
+      "music": 0.0,
+      "sid": 177,
+      "to": 353.96
+    },
+    {
+      "content": "你会更赚钱",
+      "from": 353.96,
+      "location": 2,
+      "music": 0.0,
+      "sid": 178,
+      "to": 354.54
+    },
+    {
+      "content": "或者在选举年买入其他年份卖出是否更好",
+      "from": 354.54,
+      "location": 2,
+      "music": 0.0,
+      "sid": 179,
+      "to": 357.94
+    },
+    {
+      "content": "你会更赚钱",
+      "from": 357.94,
+      "location": 2,
+      "music": 0.0,
+      "sid": 180,
+      "to": 358.56
+    },
+    {
+      "content": "或者买入小公司",
+      "from": 358.56,
+      "location": 2,
+      "music": 0.0,
+      "sid": 181,
+      "to": 359.72
+    },
+    {
+      "content": "存在所有这些变量",
+      "from": 359.72,
+      "location": 2,
+      "music": 0.0,
+      "sid": 182,
+      "to": 360.96
+    },
+    {
+      "content": "因为数据存在",
+      "from": 360.96,
+      "location": 2,
+      "music": 0.0,
+      "sid": 183,
+      "to": 361.8
+    },
+    {
+      "content": "他们学会了如何操纵数据",
+      "from": 361.8,
+      "location": 2,
+      "music": 0.0,
+      "sid": 184,
+      "to": 364.56
+    },
+    {
+      "content": "正如我的朋友所说，对于拿锤子的人来说",
+      "from": 364.56,
+      "location": 2,
+      "music": 0.0,
+      "sid": 185,
+      "to": 367.28
+    },
+    {
+      "content": "一切看起来都是钉子",
+      "from": 367.28,
+      "location": 2,
+      "music": 0.0,
+      "sid": 186,
+      "to": 368.36
+    },
+    {
+      "content": "一旦掌握这些技能",
+      "from": 368.36,
+      "location": 2,
+      "music": 0.0,
+      "sid": 187,
+      "to": 370.1
+    },
+    {
+      "content": "你急切想要找到用武之地",
+      "from": 370.1,
+      "location": 2,
+      "music": 0.0,
+      "sid": 188,
+      "to": 374.71
+    },
+    {
+      "content": "但这些并不重要",
+      "from": 374.71,
+      "location": 2,
+      "music": 0.0,
+      "sid": 189,
+      "to": 376.39
+    },
+    {
+      "content": "如果我要参与商业机会",
+      "from": 376.679,
+      "location": 2,
+      "music": 0.0,
+      "sid": 190,
+      "to": 379.439
+    },
+    {
+      "content": "这对我有区别吗",
+      "from": 379.439,
+      "location": 2,
+      "music": 0.0,
+      "sid": 191,
+      "to": 380.199
+    },
+    {
+      "content": "我是否周二买入",
+      "from": 380.199,
+      "location": 2,
+      "music": 0.0,
+      "sid": 192,
+      "to": 381.119
+    },
+    {
+      "content": "还是周六买入",
+      "from": 381.119,
+      "location": 2,
+      "music": 0.0,
+      "sid": 193,
+      "to": 381.619
+    },
+    {
+      "content": "或选举年等",
+      "from": 381.619,
+      "location": 2,
+      "music": 0.0,
+      "sid": 194,
+      "to": 382.759
+    },
+    {
+      "content": "这不是商人考虑收购企业的方式",
+      "from": 382.759,
+      "location": 2,
+      "music": 0.0,
+      "sid": 195,
+      "to": 385.5
+    },
+    {
+      "content": "所以在买股票时为何要考虑这些",
+      "from": 385.5,
+      "location": 2,
+      "music": 0.0,
+      "sid": 196,
+      "to": 387.26
+    },
+    {
+      "content": "因为股票只是企业的份额",
+      "from": 387.26,
+      "location": 2,
+      "music": 0.0,
+      "sid": 197,
+      "to": 389.22
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+# Local credentials and model request/checkpoint cache
+.env
+.env.*
+!.env.example
+.private/
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Generated packages, downloads, screenshots and reports
+/artifacts/
+/dist/
+/coverage/
+*.zip
+*.crx
+*.log
+*.partial.*
+
+# Dependencies and Python packaging helpers
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# OS and editor files
+.DS_Store
+.AppleDouble
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~

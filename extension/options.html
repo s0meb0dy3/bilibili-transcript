@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>B站逐字稿 · DeepSeek 设置</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <main>
+    <h1>智能分段设置</h1>
+    <p>API key 仅保存在此浏览器的扩展本地存储中。点击逐字稿中的“智能分段”并确认后，当前轨道字幕才会上传至 DeepSeek。</p>
+    <form id="config">
+      <label for="api-key">DeepSeek API key</label>
+      <input id="api-key" type="password" autocomplete="off" placeholder="输入新的 API key；留空保留已保存的 key">
+      <label for="model">模型</label>
+      <input id="model" type="text" value="deepseek-flash" required autocomplete="off">
+      <p class="hint">API 地址固定为 https://api.deepseek.com/chat/completions</p>
+      <div class="actions"><button type="submit">保存配置</button><button id="clear" type="button">清除 API key</button></div>
+    </form>
+    <p id="status" role="status"></p>
+  </main>
+  <script src="options.js"></script>
+</body>
+</html>
