@@ -4,6 +4,8 @@
   window.__biliTranscriptBridge = true;
 
   const playerURLs = new Map();
+  // Downloaded audio lives in the page (CDN trusts its Referer); the side panel pulls it in chunks.
+  let audioCache = null;
   new PerformanceObserver(list => {
     for (const entry of list.getEntries()) {
       if (!entry.name.startsWith('https://api.bilibili.com/x/player/')) continue;
@@ -26,6 +28,9 @@
     return {
       bvid, aid: String(video.aid), cid: String(page.cid), part,
       title: video.title, partTitle: page.part,
+      description: video.desc || '', owner: video.owner?.name || '',
+      uploader: { name: video.owner?.name || '' },
+      chapters: (video.pages || []).map(item => item.part),
       key: `${bvid}:${page.cid}`
     };
   }
@@ -102,6 +107,55 @@
             catch { playBlocked = true; }
           }
           data = { playBlocked };
+          break;
+        }
+        case 'audioInfo': {
+          const current = assertCurrent(payload.key);
+          const api = new URL('https://api.bilibili.com/x/player/playurl');
+          api.search = new URLSearchParams({ bvid: current.bvid, cid: current.cid, fnval: '4048', fnver: '0', qn: '80', fourk: '1' });
+          const info = await fetch(api, { credentials: 'include', signal: AbortSignal.timeout(20000) });
+          if (!info.ok) throw new Error(`音轨地址获取失败（HTTP ${info.status}）`);
+          const playurl = await info.json();
+          if (playurl.code !== 0) throw new Error(`音轨地址获取失败：${playurl.message || playurl.code}`);
+          const audio = playurl.data?.dash?.audio?.filter(item => /mp4a/.test(item.codecs)).sort((a, b) => b.bandwidth - a.bandwidth)[0];
+          if (!audio) throw new Error('当前视频没有可访问的 AAC 音轨');
+          // Page context supplies Bilibili's Referer, so the CDN does not reject it as a hotlink.
+          const media = await fetch(audio.baseUrl || audio.base_url, { signal: AbortSignal.timeout(120000) });
+          if (!media.ok) throw new Error(`音频下载被服务器拒绝（HTTP ${media.status}）`);
+          audioCache = { key: current.key, type: media.headers.get('content-type') || 'audio/mp4', bytes: new Uint8Array(await media.arrayBuffer()) };
+          assertCurrent(payload.key);
+          data = { type: audioCache.type, size: audioCache.bytes.length };
+          break;
+        }
+        case 'audioChunk': {
+          const current = assertCurrent(payload.key);
+          if (!audioCache || audioCache.key !== current.key) throw new Error('音频缓存已失效，请重新开始转写');
+          const size = Math.max(1, Math.min(Number(payload.size) || 4 * 1024 * 1024, 8 * 1024 * 1024));
+          const offset = Number(payload.offset) || 0;
+          const slice = audioCache.bytes.subarray(offset, offset + size);
+          let binary = '';
+          for (let i = 0; i < slice.length; i += 0x8000) binary += String.fromCharCode(...slice.subarray(i, i + 0x8000));
+          data = { offset, base64: btoa(binary), done: offset + slice.length >= audioCache.bytes.length };
+          if (data.done) audioCache = null;
+          break;
+        }
+        case 'identityMetadata': {
+          const current = assertCurrent(payload.key);
+          const mid = window.__INITIAL_STATE__.videoData.owner?.mid;
+          if (!mid) { data = current; break; }
+          const response = await fetch(`https://api.bilibili.com/x/web-interface/card?mid=${encodeURIComponent(mid)}`, {
+            credentials: 'omit', signal: AbortSignal.timeout(15000)
+          });
+          if (!response.ok) throw new Error('UP主公开资料获取失败，请稍后重试');
+          const result = await response.json();
+          assertCurrent(payload.key);
+          if (result.code !== 0 || !result.data?.card) throw new Error('UP主公开资料暂不可用，请稍后重试');
+          const card = result.data.card;
+          data = { ...current, uploader: {
+            name: card.name || current.uploader.name,
+            bio: card.sign || '',
+            verification: card.Official?.title || card.official?.title || card.official_verify?.desc || ''
+          } };
           break;
         }
         case 'tracks': data = await tracks(payload.key); break;

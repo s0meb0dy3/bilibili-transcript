@@ -26,7 +26,7 @@ async function handle(message) {
   if (message.action !== 'complete') throw new Error('未知请求');
   if (!config.apiKey) throw new Error('请先在扩展设置中保存 DeepSeek API key');
   if (message.request?.model !== model) {
-    const error = new Error('模型设置已变化，请重新启动智能分段');
+    const error = new Error('模型设置已变化，请重试');
     error.status = 409;
     throw error;
   }

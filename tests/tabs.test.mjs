@@ -64,7 +64,7 @@ test('tracks, subtitles and playback preserve their explicit tab and video key',
 test('sendMessage connection failures explain how to retry and allow a later successful request', async () => {
   const bridge = environment();
   bridge.setResponse(async () => { throw new Error('Receiving end does not exist'); });
-  await assert.rejects(bridge.request('snapshot'), /无法连接视频页.*刷新.*重试/);
+  await assert.rejects(bridge.request('snapshot'), /脚本未就绪.*刷新.*视频页/);
   bridge.setResponse(async () => ({ ok: true, data: { context: { key: 'BVexample:1' } } }));
   assert.equal((await bridge.request('snapshot')).context.key, 'BVexample:1');
 });

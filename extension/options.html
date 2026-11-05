@@ -3,20 +3,28 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>B站逐字稿 · DeepSeek 设置</title>
+  <title>B站逐字稿 · 模型设置</title>
   <link rel="stylesheet" href="options.css">
 </head>
 <body>
   <main>
-    <h1>智能分段设置</h1>
-    <p>API key 仅保存在此浏览器的扩展本地存储中。点击逐字稿中的“智能分段”并确认后，当前轨道字幕才会上传至 DeepSeek。</p>
+    <h1>模型设置</h1>
+    <p>密钥仅保存在浏览器本地，不回显。音频转写与发言人名称推断分别配置，只有在侧栏确认后才上传内容。</p>
     <form id="config">
+      <h2>百炼：音频转写与说话人区分</h2>
+      <label for="bailian-key">百炼 API key（北京地域）</label>
+      <input id="bailian-key" type="password" autocomplete="off" placeholder="留空保留已保存的密钥">
+      <label for="bailian-model">ASR 模型</label>
+      <input id="bailian-model" value="qwen-audio-3.1-asr-flash-filetrans" required>
+      <p class="hint">原始 M4A 直接上传。speaker_id 是匿名聚类，不是真实身份。</p>
+      <button type="button" id="clear-bailian">清除百炼密钥</button>
+      <h2>DeepSeek：可选推断发言人名称</h2>
       <label for="api-key">DeepSeek API key</label>
-      <input id="api-key" type="password" autocomplete="off" placeholder="输入新的 API key；留空保留已保存的 key">
-      <label for="model">模型</label>
-      <input id="model" type="text" value="deepseek-flash" required autocomplete="off">
-      <p class="hint">API 地址固定为 https://api.deepseek.com/chat/completions</p>
-      <div class="actions"><button type="submit">保存配置</button><button id="clear" type="button">清除 API key</button></div>
+      <input id="api-key" type="password" autocomplete="off" placeholder="留空保留已保存的密钥">
+      <label for="model">分段模型</label>
+      <input id="model" value="deepseek-flash" required>
+      <p class="hint">用于推断发言人姓名；不配置则只显示“未知发言人”及编号，分段不受影响。</p>
+      <div class="actions"><button type="submit">保存配置</button><button id="clear" type="button">清除 DeepSeek 密钥</button></div>
     </form>
     <p id="status" role="status"></p>
   </main>

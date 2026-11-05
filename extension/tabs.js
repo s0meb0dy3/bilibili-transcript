@@ -4,7 +4,10 @@ export function createTabBridge(tabs = chrome.tabs) {
     let result;
     try {
       result = await tabs.sendMessage(tabId, { channel: 'bili-transcript-tab', action, payload });
-    } catch {
+    } catch (error) {
+      if (/Receiving end does not exist|Could not establish connection/.test(error?.message || '')) {
+        throw new Error('视频页脚本未就绪。请刷新左侧 B 站视频页（或重新加载扩展后刷新）再试');
+      }
       throw new Error('无法连接视频页，请刷新左侧 B 站页面后重试');
     }
     if (!result?.ok) throw new Error(result?.error || '视频页没有响应，请刷新页面后重试');

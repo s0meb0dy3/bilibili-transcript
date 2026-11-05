@@ -47,7 +47,7 @@ test('Markdown exports original words and links to the correct part', () => {
   });
   assert.ok(md.includes('第一句话。第二句话。'));
   assert.ok(md.includes('BVtest/?p=2&t=0'));
-  assert.ok(md.includes('未标注'));
+  assert.ok(md.includes('未知发言人'));
   assert.ok(md.includes('自动中文字幕'));
 });
 

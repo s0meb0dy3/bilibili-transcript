@@ -1,11 +1,11 @@
 {
   "manifest_version": 3,
   "name": "B站逐字稿",
-  "version": "0.3.0",
+  "version": "0.4.8",
   "minimum_chrome_version": "116",
   "description": "点击工具栏图标，在浏览器原生侧栏阅读B站逐字稿，点击句子回看。",
   "permissions": ["storage", "sidePanel", "contextMenus"],
-  "host_permissions": ["https://www.bilibili.com/*", "https://api.deepseek.com/*"],
+  "host_permissions": ["https://www.bilibili.com/*", "https://api.deepseek.com/*", "https://*.aliyuncs.com/*", "https://*.bilivideo.com/*", "https://*.bilivideo.cn/*", "https://*.hdslb.com/*"],
   "action": {
     "default_title": "打开B站逐字稿侧栏",
     "default_icon": { "16": "icons/16.png", "32": "icons/32.png" }

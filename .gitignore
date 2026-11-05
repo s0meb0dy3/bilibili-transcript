@@ -3,6 +3,8 @@
 .env.*
 !.env.example
 .private/
+# Local API reference currently contains credentials
+/docs/bailian-api.md
 *.pem
 *.key
 *.p12
