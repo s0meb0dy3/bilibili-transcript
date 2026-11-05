@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "B站逐字稿",
-  "version": "0.4.8",
+  "version": "0.4.9",
   "minimum_chrome_version": "116",
   "description": "点击工具栏图标，在浏览器原生侧栏阅读B站逐字稿，点击句子回看。",
   "permissions": ["storage", "sidePanel", "contextMenus"],
