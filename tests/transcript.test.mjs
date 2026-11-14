@@ -1,35 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeSubtitles, cacheKey } from '../extension/subtitles.js';
 import { activeCueAt, formatTime, toMarkdown, buildSentenceRuns } from '../extension/panel.js';
-import { segmentCues } from '../extension/segmentation.js';
+import { sentenceRanges } from '../extension/text.js';
 
-const raw = { body: [
-  { sid: 1, from: .72, to: 4.14, content: '第一句话。' },
-  { sid: 2, from: 5, to: 10.54, content: '第二句话。' }
-] };
-
-test('normalization preserves source text and converts seconds to milliseconds', () => {
-  const cues = normalizeSubtitles(raw);
-  assert.deepEqual(cues[0], { id: '1', text: '第一句话。', startMs: 720, endMs: 4140 });
-});
-
-test('invalid subtitle format is a parsing error rather than no subtitles', () => {
-  assert.throws(() => normalizeSubtitles({}), /解析/);
-  assert.throws(() => normalizeSubtitles({ body: [{ content: 'x', from: 2, to: 1 }] }), /解析/);
-});
+const cues = [
+  { id: '1', text: '第一句话。', startMs: 720, endMs: 4140 },
+  { id: '2', text: '第二句话。', startMs: 5000, endMs: 10540 }
+];
 
 test('playback lookup handles boundaries, silence and reverse seeking', () => {
-  const cues = normalizeSubtitles(raw);
   for (const [time, expected] of [[0, null], [720, '1'], [4139, '1'], [4140, null], [5000, '2'], [10540, null], [800, '1']]) {
     assert.equal(activeCueAt(cues, time), expected, `time=${time}`);
   }
   assert.equal(activeCueAt([], 0), null);
-});
-
-test('cache identity isolates parts and language tracks', () => {
-  assert.notEqual(cacheKey({ key: 'BVtest:1' }, 'zh'), cacheKey({ key: 'BVtest:2' }, 'zh'));
-  assert.notEqual(cacheKey({ key: 'BVtest:1' }, 'zh'), cacheKey({ key: 'BVtest:1' }, 'ai-zh'));
 });
 
 test('timestamp formatting supports hours without rolling over', () => {
@@ -38,20 +21,19 @@ test('timestamp formatting supports hours without rolling over', () => {
   assert.equal(formatTime(3600000), '01:00:00');
 });
 
-test('Markdown exports original words and links to the correct part', () => {
-  const cues = normalizeSubtitles(raw);
-  const paragraphs = segmentCues(cues);
+test('Markdown exports ASR words, speaker and links to the correct part', () => {
   const md = toMarkdown({
     context: { title: '演讲', part: 2, partTitle: '下半段', bvid: 'BVtest' },
-    track: { automatic: true, language: 'ai-zh' }, paragraphs
+    source: '百炼 ASR',
+    paragraphs: [{ id: 'p1', speakerId: '0', startMs: 720, text: cues.map(cue => cue.text).join('') }]
   });
   assert.ok(md.includes('第一句话。第二句话。'));
   assert.ok(md.includes('BVtest/?p=2&t=0'));
   assert.ok(md.includes('未知发言人'));
-  assert.ok(md.includes('自动中文字幕'));
+  assert.ok(md.includes('百炼 ASR'));
 });
 
-test('click targets join a sentence across cues and seek to its first cue', () => {
+test('click targets join a sentence across fragments and seek to its first cue', () => {
   const cues = [
     { id: '1', startMs: 1000 }, { id: '2', startMs: 2000 }, { id: '3', startMs: 3000 }
   ];
@@ -62,14 +44,32 @@ test('click targets join a sentence across cues and seek to its first cue', () =
   assert.deepEqual(runs[0].fragments.map(part => part.cueId), ['1', '2']);
 });
 
-test('without sentence boundaries, click targets keep subtitle timing granularity', () => {
-  const runs = buildSentenceRuns([{ cueId: '1', text: '这一句没有标点' }, { cueId: '2', text: '还有下一条字幕' }], [
+test('without sentence boundaries, click targets retain available cue timing', () => {
+  const runs = buildSentenceRuns([{ cueId: '1', text: '这一句没有标点' }, { cueId: '2', text: '还有下一句' }], [
     { id: '1', startMs: 100 }, { id: '2', startMs: 2500 }
   ]);
   assert.deepEqual(runs.map(run => run.startMs), [100, 2500]);
 });
 
-test('sentences within one subtitle share its real start rather than fabricated word timing', () => {
+test('sentences within one cue share its real start rather than fabricated word timing', () => {
   const runs = buildSentenceRuns([{ cueId: '1', text: '第一句。第二句。' }], [{ id: '1', startMs: 1200 }]);
   assert.deepEqual(runs.map(run => run.startMs), [1200, 1200]);
+});
+
+test('lightweight sentence ranges preserve quotes, whitespace and UTF-16 offsets', () => {
+  const text = '😀他说：“真的？！”\n下一句！';
+  const ranges = sentenceRanges(text);
+  assert.deepEqual(ranges.map(({ start, end }) => text.slice(start, end)), ['😀他说：“真的？！”\n', '下一句！']);
+  assert.equal(ranges[0].start, 0);
+  assert.equal(ranges.at(-1).end, text.length);
+  assert.equal(ranges[0].end, ranges[1].start);
+});
+
+test('sentence ranges do not split decimals, URLs or weak punctuation', () => {
+  const text = '值3.14，网址https://example.com/path。Done. Next!';
+  assert.deepEqual(sentenceRanges(text).map(({ start, end }) => text.slice(start, end)),
+    ['值3.14，网址https://example.com/path。', 'Done. ', 'Next!']);
+  const unfinished = '甲，乙,丙；丁;戊：己:庚……辛';
+  assert.deepEqual(sentenceRanges(unfinished), [{ start: 0, end: unfinished.length }]);
+  assert.deepEqual(sentenceRanges(''), []);
 });

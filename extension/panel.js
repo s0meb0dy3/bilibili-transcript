@@ -1,7 +1,7 @@
 import { getPerson } from './people.js';
-import { sentenceRanges } from './segmentation.js';
+import { sentenceRanges } from './text.js';
 
-// Keep sentence-level click targets and cue-level playback highlighting separate.
+// 点击按整句跳转，高亮仍按原始时间片更新。
 export function buildSentenceRuns(fragments, cues) {
   const cuesById = new Map(cues.map(cue => [cue.id, cue]));
   let offset = 0;
@@ -12,7 +12,7 @@ export function buildSentenceRuns(fragments, cues) {
   });
   const text = fragments.map(fragment => fragment.text).join('');
   const sentences = sentenceRanges(text);
-  // Without sentence punctuation, offer the available subtitle timing granularity.
+  // 无句界时按原始时间片定位，不虚构逐字时间。
   const ranges = sentences.length > 1 || /[。！？!?.][”’"')）】》」』\s]*$/u.test(text)
     ? sentences : sources.filter(source => source.end > source.start);
   return ranges.map(range => {
@@ -55,51 +55,47 @@ export class TranscriptPanel {
     this.aside.setAttribute('aria-label', '视频逐字稿');
     this.title = element('h1', 'video-title', '逐字稿');
     this.source = element('div', 'source');
-    this.select = element('select', 'track-select');
-    this.select.setAttribute('aria-label', '中文字幕轨道');
-    this.select.onchange = () => handlers.track(this.select.value);
     this.refresh = element('button', 'tool-button', '刷新');
     this.refresh.onclick = () => handlers.refresh();
     this.exportButton = element('button', 'tool-button', '导出');
     this.exportButton.disabled = true;
     this.exportButton.onclick = () => handlers.export();
     const tools = element('div', 'tools');
-    this.select.hidden = true;
     this.transcribeButton = element('button', 'tool-button', '转写音频');
     this.transcribeButton.onclick = () => {
       this.confirmAction = 'transcribe';
-      this.consentText.textContent = '将下载当前分P的完整原始音频并上传至阿里云百炼，用于转写和匿名说话人区分，可能产生费用。原始音频不转码。是否继续？';
-      this.semanticConsent.hidden = false;
+      this.consentText.textContent = '将原始音频上传百炼转写，再将完整转写、视频及UP主公开资料发送至 DeepSeek 推断发言人，最后将少量视频截图上传百炼提取头像。可能产生费用，原始音频不转码。是否继续？';
+      this.uploadConsent.hidden = false;
     };
     tools.append(this.transcribeButton, this.refresh, this.exportButton);
     const aiTools = element('div', 'ai-tools');
-    this.cancelSemantic = element('button', 'tool-button', '取消');
-    this.cancelSemantic.hidden = true;
-    this.cancelSemantic.onclick = () => handlers.cancelSemantic();
+    this.cancelTask = element('button', 'tool-button', '取消');
+    this.cancelTask.hidden = true;
+    this.cancelTask.onclick = () => handlers.cancelTask();
     this.identityButton = element('button', 'tool-button', '推断发言人');
     this.identityButton.disabled = true;
     this.identityButton.onclick = () => {
       this.confirmAction = 'identify';
-      this.consentText.textContent = '将视频标题、简介、分P标题、UP主公开昵称/简介/认证信息及转写片段发送至 DeepSeek 推断姓名。不是声纹认证，可能有误；证据不足保留未知。是否继续？';
-      this.semanticConsent.hidden = false;
+      this.consentText.textContent = '将视频标题、简介、分P标题、UP主公开昵称/简介/认证信息及完整转写发送至 DeepSeek 推断姓名。不是声纹认证，可能有误；证据不足保留未知。是否继续？';
+      this.uploadConsent.hidden = false;
     };
-    aiTools.append(this.identityButton, this.cancelSemantic);
-    this.semanticConsent = element('div', 'semantic-consent');
-    this.semanticConsent.hidden = true;
+    aiTools.append(this.identityButton, this.cancelTask);
+    this.uploadConsent = element('div', 'upload-consent');
+    this.uploadConsent.hidden = true;
     this.consentText = element('p');
-    this.semanticConsent.append(this.consentText);
+    this.uploadConsent.append(this.consentText);
     const confirm = element('button', 'tool-button', '确认上传并开始');
     confirm.onclick = () => {
-      this.semanticConsent.hidden = true;
+      this.uploadConsent.hidden = true;
       if (this.confirmAction === 'transcribe') handlers.transcribe();
       else handlers.identify();
     };
     const dismiss = element('button', 'text-button', '暂不上传');
-    dismiss.onclick = () => { this.semanticConsent.hidden = true; };
-    this.semanticConsent.append(confirm, dismiss);
-    this.semanticStatus = element('div', 'semantic-status');
-    this.semanticStatus.setAttribute('role', 'status');
-    this.semanticStatus.hidden = true;
+    dismiss.onclick = () => { this.uploadConsent.hidden = true; };
+    this.uploadConsent.append(confirm, dismiss);
+    this.taskStatus = element('div', 'task-status');
+    this.taskStatus.setAttribute('role', 'status');
+    this.taskStatus.hidden = true;
     this.status = element('div', 'status');
     this.status.setAttribute('role', 'status');
     this.status.hidden = true;
@@ -115,7 +111,7 @@ export class TranscriptPanel {
     this.raw = element('pre', 'raw');
     this.raw.hidden = true;
     this.body.append(this.transcript, this.raw);
-    // Only user input pauses following; programmatic scrolling does not.
+    // 用户滚动才暂停跟随，程序滚动不影响。
     this.body.addEventListener('wheel', () => this.setFollow(false), { passive: true });
     this.body.addEventListener('touchmove', () => this.setFollow(false), { passive: true });
     this.body.addEventListener('pointerdown', event => {
@@ -143,7 +139,7 @@ export class TranscriptPanel {
       if (this.follow) this.scrollToActive();
     };
     footer.append(this.rawButton, this.followButton);
-    this.aside.append(this.title, this.source, tools, aiTools, this.semanticConsent, this.semanticStatus, this.status, this.body, footer);
+    this.aside.append(this.title, this.source, tools, aiTools, this.uploadConsent, this.taskStatus, this.status, this.body, footer);
     root.append(this.aside);
     document.body.append(this.host);
   }
@@ -155,7 +151,6 @@ export class TranscriptPanel {
     this.refresh.disabled = !available;
     this.transcribeButton.disabled = !available;
     this.retry.disabled = !available;
-    this.select.disabled = !available || this.select.options.length < 2;
     if (!available) {
       this.title.textContent = '逐字稿';
       this.title.removeAttribute('title');
@@ -165,16 +160,6 @@ export class TranscriptPanel {
   setContext(context) {
     this.title.textContent = `P${context.part} · ${context.partTitle || context.title}`;
     this.title.title = context.title;
-  }
-
-  setTracks(tracks, selected) {
-    this.select.replaceChildren(...tracks.map(track => {
-      const option = element('option', '', `${track.name}${track.automatic ? ' · 自动字幕' : ''}`);
-      option.value = track.id;
-      return option;
-    }));
-    this.select.value = selected || '';
-    this.select.disabled = !this.available || tracks.length < 2;
   }
 
   setStatus(message = '', { error = false, retry = false } = {}) {
@@ -188,26 +173,25 @@ export class TranscriptPanel {
     this.transcribeButton.disabled = busy || !this.available;
     this.identityButton.disabled = busy || this.exportButton.disabled;
     this.refresh.disabled = busy || !this.available;
-    this.cancelSemantic.hidden = !busy;
+    this.cancelTask.hidden = !busy;
   }
 
-  setSemanticState({ busy = false, message = '', error = false } = {}) {
+  setTaskState({ busy = false, message = '', error = false } = {}) {
     this.setBusy(busy);
-    this.cancelSemantic.hidden = !busy;
-    this.semanticStatus.textContent = message;
-    this.semanticStatus.hidden = !message;
-    this.semanticStatus.classList.toggle('error', error);
-    if (busy) this.semanticConsent.hidden = true;
+    this.cancelTask.hidden = !busy;
+    this.taskStatus.textContent = message;
+    this.taskStatus.hidden = !message;
+    this.taskStatus.classList.toggle('error', error);
+    if (busy) this.uploadConsent.hidden = true;
   }
 
   clear() {
-    this.semanticConsent.hidden = true;
-    this.setSemanticState();
+    this.uploadConsent.hidden = true;
+    this.setTaskState();
     this.identityButton.disabled = true;
     this.transcript.replaceChildren();
     this.raw.textContent = '';
     this.source.textContent = '';
-    this.setTracks([], '');
     this.exportButton.disabled = true;
     this.activeCue = null;
     this.activeParagraph = null;
@@ -216,7 +200,7 @@ export class TranscriptPanel {
     this.body.scrollTop = 0;
   }
 
-  renderDocument({ cues, paragraphs, track, savedAt, source, people = {} }) {
+  renderDocument({ cues, paragraphs, savedAt, source, people = {}, avatars = {} }) {
     this.cueNodes = new Map();
     this.paragraphNodes = new Map();
     this.activeCue = null;
@@ -230,6 +214,13 @@ export class TranscriptPanel {
       const meta = element('div', 'paragraph-meta');
       const avatar = element('span', 'avatar');
       avatar.setAttribute('aria-hidden', 'true');
+      if (avatars[paragraph.speakerId]) {
+        avatar.classList.add('has-image');
+        const image = element('img', 'avatar-image');
+        image.src = avatars[paragraph.speakerId];
+        image.alt = '';
+        avatar.append(image);
+      }
       const timestamp = element('button', 'timestamp', formatTime(paragraph.startMs));
       timestamp.title = `跳转到 ${formatTime(paragraph.startMs)}`;
       timestamp.onclick = () => this.handlers.seek(paragraph.startMs);
@@ -275,7 +266,7 @@ export class TranscriptPanel {
     }
     this.transcript.replaceChildren(fragment);
     this.raw.textContent = cues.map(cue => `${formatTime(cue.startMs)} → ${formatTime(cue.endMs)}\n${cue.text}`).join('\n\n');
-    this.source.textContent = `${source || (track.automatic ? 'B站自动字幕 · 可能存在识别错误' : 'B站中文字幕')} · ${cues.length} 句 · ${paragraphs.length} 段`;
+    this.source.textContent = `${source || '百炼 ASR · 自动识别可能有误'} · ${cues.length} 句 · ${paragraphs.length} 段`;
     this.source.title = `本地保存于 ${new Date(savedAt).toLocaleString()}`;
     this.exportButton.disabled = false;
     this.identityButton.disabled = !cues.length;
@@ -315,10 +306,10 @@ export class TranscriptPanel {
 }
 
 export function toMarkdown(documentData) {
-  const { context, track, paragraphs, source, people = {} } = documentData;
+  const { context, paragraphs, source, people = {} } = documentData;
   const lines = [
     `# ${context.title}`, '', `分P：P${context.part} ${context.partTitle}`,
-    `来源：${source || `B站${track.automatic ? '自动' : ''}中文字幕（${track.language}）`}`,
+    `来源：${source || '百炼 ASR'}`,
     `视频：https://www.bilibili.com/video/${context.bvid}/?p=${context.part}`, ''
   ];
   for (const paragraph of paragraphs) {
@@ -329,7 +320,7 @@ export function toMarkdown(documentData) {
   return lines.join('\n');
 }
 
-// Locate the actual subtitle interval. Silence between cues has no active subtitle.
+// 查找实际发言区间，静音间隙不高亮。
 export function activeCueAt(cues, timeMs) {
   let low = 0;
   let high = cues.length - 1;

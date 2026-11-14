@@ -1,10 +1,10 @@
 {
   "manifest_version": 3,
   "name": "B站逐字稿",
-  "version": "0.4.9",
+  "version": "0.5.0",
   "minimum_chrome_version": "116",
   "description": "点击工具栏图标，在浏览器原生侧栏阅读B站逐字稿，点击句子回看。",
-  "permissions": ["storage", "sidePanel", "contextMenus"],
+  "permissions": ["storage", "unlimitedStorage", "sidePanel", "contextMenus"],
   "host_permissions": ["https://www.bilibili.com/*", "https://api.deepseek.com/*", "https://*.aliyuncs.com/*", "https://*.bilivideo.com/*", "https://*.bilivideo.cn/*", "https://*.hdslb.com/*"],
   "action": {
     "default_title": "打开B站逐字稿侧栏",
@@ -28,6 +28,6 @@
     }
   ],
   "web_accessible_resources": [
-    { "resources": ["subtitles.js"], "matches": ["https://www.bilibili.com/*"] }
+    { "resources": ["page-channel.js"], "matches": ["https://www.bilibili.com/*"] }
   ]
 }

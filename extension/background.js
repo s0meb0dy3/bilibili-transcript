@@ -1,5 +1,7 @@
 const CONFIG_KEY = 'deepseekConfig';
 const DEFAULT_MODEL = 'deepseek-flash';
+const BAILIAN_KEY = 'bailianConfig';
+const VISION_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions';
 
 async function setupSidebar() {
   await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
@@ -14,11 +16,27 @@ chrome.contextMenus.onClicked.addListener(info => {
   if (info.menuItemId === 'settings') chrome.runtime.openOptionsPage();
 });
 
+async function vision(request) {
+  const values = await chrome.storage.local.get(BAILIAN_KEY);
+  const config = values[BAILIAN_KEY] || {};
+  if (!config.apiKey) throw new Error('请先在扩展设置中保存百炼 API key');
+  const response = await fetch(VISION_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.apiKey}` },
+    body: JSON.stringify(request)
+  });
+  if (!response.ok) throw new Error(`百炼视觉请求失败（HTTP ${response.status}）`);
+  const body = await response.json();
+  if (body.choices?.[0]?.finish_reason !== 'stop') throw new Error('百炼视觉结果不完整，请重试');
+  return { content: body.choices?.[0]?.message?.content ?? '', usage: body.usage };
+}
+
 async function handle(message) {
   if (message.action === 'openOptions') {
     await chrome.runtime.openOptionsPage();
     return null;
   }
+  if (message.action === 'vision') return vision(message.request);
   const values = await chrome.storage.local.get(CONFIG_KEY);
   const config = values[CONFIG_KEY] || {};
   const model = config.model || DEFAULT_MODEL;
@@ -64,7 +82,7 @@ async function handle(message) {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (sender.id !== chrome.runtime.id) return false;
-  if (!['openOptions', 'modelConfig', 'complete'].includes(message?.action)) return false;
+  if (!['openOptions', 'modelConfig', 'complete', 'vision'].includes(message?.action)) return false;
   handle(message).then(data => sendResponse({ ok: true, data }), error => sendResponse({ ok: false, error: error.message, status: error.status }));
   return true;
 });

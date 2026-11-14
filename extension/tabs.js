@@ -1,4 +1,4 @@
-// The side panel talks to the active Bilibili tab; it never reads the page DOM.
+// 侧栏通过消息访问活动视频页，不直接读取网页 DOM。
 export function createTabBridge(tabs = chrome.tabs) {
   async function send(tabId, action, payload) {
     let result;

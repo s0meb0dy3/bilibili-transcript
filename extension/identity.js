@@ -1,7 +1,7 @@
-import { fingerprint } from './semantic.js';
+import { fingerprint } from './fingerprint.js';
 
 export const PROMPT_VERSION = 'identity-v6';
-// Keep one request below the model context; longer videos are split at sentence boundaries.
+// 超长转写按句子分块，不截断原句。
 const CHUNK_CHARS = 100000;
 const ROLE = /^(主持人|嘉宾|主讲|嘉宾主持|主持人嘉宾|旁白|解说|记者|听众|提问者|服务员|选手)$/;
 
@@ -68,7 +68,7 @@ function validate(list, speakerIds, sources, speakerChars) {
     const rank = speakerChars.get(id) || 0;
     if (!weight.has(name) || weight.get(name).rank < rank) weight.set(name, { id, rank });
   }
-  // One concrete name belongs to one speaker; roles may repeat.
+  // 具体姓名不重复分配，角色标签可以重复。
   const usedNames = new Set();
   for (const [name, { id }] of [...weight.entries()].sort((a, b) => b[1].rank - a[1].rank)) {
     if (!ROLE.test(name) && usedNames.has(name)) continue;
@@ -92,7 +92,7 @@ function chunksOf(cues) {
   return chunks;
 }
 
-// Transport and storage are injected, so this module runs in both Node and the extension.
+// 模型调用和存储由外部注入，便于离线测试。
 export async function inferPeople({
   cues, metadata = {}, model = 'deepseek-flash', callModel,
   store = { get: async () => null, set: async () => {} }, signal

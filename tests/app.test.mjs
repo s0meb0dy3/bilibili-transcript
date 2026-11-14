@@ -4,6 +4,7 @@ import vm from 'node:vm';
 import { readFile } from 'node:fs/promises';
 import { normalizeTranscript, paragraphize } from '../extension/transcript.js';
 import { activeCueAt } from '../extension/panel.js';
+import { loadPageAudio } from '../extension/audio-loader.js';
 
 // Exercise the app's orchestration without importing its browser-only startup.
 const source = (await readFile(new URL('../extension/app.js', import.meta.url), 'utf8')).replace(/^import .+;\n/gm, '');
@@ -15,6 +16,7 @@ const deferred = () => {
   return { promise, resolve };
 };
 const resultKey = 'asr-document:v1:BVexample:1';
+const avatarKey = 'asr-avatars:v1:BVexample:1';
 const defaultModel = 'qwen-audio-3.1-asr-flash-filetrans';
 const taskKey = model => `asr-task:v1:BVexample:1:${model}`;
 const rawTranscript = () => ({
@@ -44,6 +46,7 @@ async function environment({ cached = true, config = { apiKey: 'bailian-key', mo
   let audioInfo = async () => ({ type: 'audio/mp4', size: audioBytes.length });
   let audioChunk = async payload => ({ base64: btoa(audioBytes.slice(payload.offset || 0)), done: true });
   let transcribe = async () => rawTranscript();
+  let extract = async () => ({});
   let identify = async options => {
     await options.callModel({ model: options.model, messages: [] });
     return { '0': { name: '张老师', confidence: 'high', evidence: '第一句。' } };
@@ -55,7 +58,7 @@ async function environment({ cached = true, config = { apiKey: 'bailian-key', mo
   const listeners = {}, intervals = [];
   class Panel {
     constructor(_style, handlers) {
-      this.handlers = handlers; this.isOpen = true; this.activeCalls = []; this.semanticStates = []; this.busyCalls = [];
+      this.handlers = handlers; this.isOpen = true; this.activeCalls = []; this.taskStates = []; this.busyCalls = [];
     }
     setAvailable(value) { this.available = value; }
     setContext(value) { this.context = value; }
@@ -64,7 +67,7 @@ async function environment({ cached = true, config = { apiKey: 'bailian-key', mo
     renderDocument(value) { this.rendered = value; }
     setFollow(value) { this.follow = value; }
     setActive(value) { this.active = value; this.activeCalls.push(value); }
-    setSemanticState(value) { this.semanticState = value; this.semanticStates.push(value); if ('busy' in value) this.busy = value.busy; }
+    setTaskState(value) { this.taskState = value; this.taskStates.push(value); if ('busy' in value) this.busy = value.busy; }
     setBusy(value) { this.busy = value; this.busyCalls.push(value); }
   }
   const request = async (action, payload) => {
@@ -75,13 +78,42 @@ async function environment({ cached = true, config = { apiKey: 'bailian-key', mo
     if (action === 'identityMetadata') return { ...context, tabId };
     if (action === 'audioInfo') return audioInfo(payload);
     if (action === 'audioChunk') return audioChunk(payload);
+    if (action === 'framesAt') return (payload.times || []).map(timeMs => ({ timeMs, dataUrl: 'data:image/jpeg;base64,frame' }));
     if (action === 'playback') return playback(payload);
     if (action === 'seek') return seek(payload);
     throw new Error(`Unexpected request: ${action}`);
   };
   const scope = {
+    loadPageAudio,
+    getModelConfig: async () => {
+      const result = await scope.chrome.runtime.sendMessage({ action: 'modelConfig' });
+      if (!result.ok) throw new Error(result.error);
+      return result.data;
+    },
+    completeText: async request => {
+      const result = await scope.chrome.runtime.sendMessage({ action: 'complete', request });
+      if (!result.ok) throw new Error(result.error);
+      return result.data;
+    },
+    analyzeFrame: async request => {
+      const result = await scope.chrome.runtime.sendMessage({ action: 'vision', request });
+      if (!result.ok) throw new Error(result.error);
+      return result.data;
+    },
+    extractAvatars: async options => {
+      await options.captureFrames([1000]);
+      await options.analyzeFrame({});
+      return extract(options);
+    },
     createTabBridge: () => request, TranscriptPanel: Panel, activeCueAt, normalizeTranscript, paragraphize,
     transcribeAudio: options => { asrCalls.push(options); return transcribe(options); },
+    candidateTimes: () => [{ speakerId: '0', timeMs: 1000 }],
+    chooseAvatars: () => ({}),
+    concreteName: name => name || '',
+    cropAvatar: async () => 'data:image/jpeg;base64,avatar',
+    initialAvatar: () => 'data:image/svg+xml,initial',
+    parsePeople: () => [],
+    visionPrompt: () => '',
     inferPeople: options => { identifyCalls.push(options); return identify(options); },
     readStored: async key => { reads.push(key); return readStored(key); },
     writeStored: async (key, value) => { writes.push({ key, value: structuredClone(value) }); storage.set(key, structuredClone(value)); },
@@ -91,6 +123,7 @@ async function environment({ cached = true, config = { apiKey: 'bailian-key', mo
         messages.push(message);
         if (message.action === 'modelConfig') return modelConfig;
         if (message.action === 'complete') return complete(message.request);
+        if (message.action === 'vision') return { ok: true, data: { content: '[]' } };
         throw new Error(`Unexpected runtime message: ${message.action}`);
       } },
       tabs: Object.fromEntries(['onActivated', 'onUpdated', 'onRemoved'].map(name => [name, {
@@ -106,6 +139,7 @@ async function environment({ cached = true, config = { apiKey: 'bailian-key', mo
   await flush();
   return {
     ...scope.hooks, storage, calls, reads, writes, asrCalls, identifyCalls, messages, intervals,
+    setExtract: handler => { extract = handler; },
     setIdentify: handler => { identify = handler; },
     setAudioInfo: handler => { audioInfo = handler; }, setAudioChunk: handler => { audioChunk = handler; }, setTranscribe: handler => { transcribe = handler; },
     setComplete: handler => { complete = handler; },
@@ -120,10 +154,10 @@ async function environment({ cached = true, config = { apiKey: 'bailian-key', mo
 
 test('startup restores only the local ASR cache and never automatically uploads audio', async () => {
   const app = await environment();
-  assert.deepEqual(plain(app.getData()), cachedDocument());
+  assert.deepEqual(plain(app.getData()), { ...cachedDocument(), avatars: {} });
   assert.equal(app.panel.rendered, app.getData());
   assert.equal(app.panel.follow, false);
-  assert.deepEqual(app.reads, ['settings', resultKey]);
+  assert.deepEqual(app.reads, ['settings', resultKey, avatarKey]);
   assert.deepEqual(app.calls.map(call => call.action), ['snapshot', 'playback']);
   assert.equal(app.asrCalls.length, 0);
   assert.equal(app.messages.length, 0);
@@ -140,7 +174,7 @@ test('transcription automatically infers speaker names without an extra user act
   assert.equal(app.identifyCalls.length, 1);
   assert.ok(data.people);
   assert.equal(data.people['0'].name, '张老师');
-  assert.match(app.panel.semanticState.message, /发言人推断完成/);
+  assert.match(app.panel.taskState.message, /发言人推断.*完成/);
   assert.deepEqual(app.storage.get(resultKey).people, data.people);
 });
 
@@ -185,7 +219,7 @@ test('transcribe forwards Bailian configuration, original audio URL, signal and 
   const app = await environment({ cached: false, config });
   app.setTranscribe(async options => {
     options.onProgress({ message: '云端任务识别中' });
-    assert.equal(app.panel.semanticState.message, '云端任务识别中');
+    assert.equal(app.panel.taskState.message, '云端任务识别中');
     await options.store.set(options.taskKey, { task_id: 'task-123' });
     assert.deepEqual(await options.store.get(options.taskKey), { task_id: 'task-123' });
     return rawTranscript();
@@ -199,7 +233,7 @@ test('transcribe forwards Bailian configuration, original audio URL, signal and 
   assert.ok(app.reads.includes('bailianConfig'));
   assert.ok(app.reads.includes(taskKey('custom-asr')));
   assert.equal(app.panel.busy, false);
-  assert.match(app.panel.semanticState.message, /转写.*完成/);
+  assert.match(app.panel.taskState.message, /转写.*完成/);
 });
 
 test('an existing cloud task resumes without fetching audio and uses the default model task key', async () => {
@@ -222,8 +256,8 @@ test('failed submitted tasks are retained so the next user attempt resumes inste
   });
   await app.panel.handlers.transcribe();
   assert.equal(app.getData(), original);
-  assert.equal(app.panel.semanticState.error, true);
-  assert.match(app.panel.semanticState.message, /轮询网络失败.*已有稿件保留/);
+  assert.equal(app.panel.taskState.error, true);
+  assert.match(app.panel.taskState.message, /轮询网络失败.*已有稿件保留/);
   assert.equal(app.panel.busy, false);
   app.setTranscribe(async () => rawTranscript());
   await app.panel.handlers.transcribe();
@@ -245,7 +279,8 @@ test('ASR persists original words, millisecond timestamps and anonymous speaker 
   assert.deepEqual(data.cues[0].words, raw.transcripts[0].sentences[0].words);
   assert.match(data.source, /匿名说话人.*可能有误/);
   assert.equal(data.track.language, 'asr');
-  assert.deepEqual(app.storage.get(resultKey), plain(data));
+  const stored = plain(data); delete stored.avatars;
+  assert.deepEqual(app.storage.get(resultKey), stored);
   assert.ok(data.savedAt > 123);
   await app.load();
   assert.deepEqual(plain(app.getData()), plain(data));
@@ -258,7 +293,7 @@ test('transcription failures preserve the existing document and cached manuscrip
   await app.panel.handlers.transcribe();
   assert.equal(app.getData(), original);
   assert.equal(app.panel.rendered, original);
-  assert.match(app.panel.semanticState.message, /原始音频获取失败.*已有稿件保留/);
+  assert.match(app.panel.taskState.message, /原始音频获取失败.*已有稿件保留/);
   assert.deepEqual(app.storage.get(resultKey), cached);
   assert.equal(app.writes.length, 0);
   assert.equal(app.panel.busy, false);
@@ -269,7 +304,7 @@ test('missing provider credentials do not acquire or upload audio and keep the c
   const original = app.getData();
   await app.panel.handlers.transcribe();
   assert.equal(app.getData(), original);
-  assert.match(app.panel.semanticState.message, /百炼 API key/);
+  assert.match(app.panel.taskState.message, /百炼 API key/);
   assert.equal(app.calls.some(call => call.action === 'audioInfo'), false);
   assert.equal(app.asrCalls.length, 0);
 });
@@ -389,7 +424,7 @@ test('identify forwards video context and cues, then persists people without cha
   assert.deepEqual(app.storage.get(resultKey), plain(data));
   assert.equal(app.panel.rendered, data);
   assert.deepEqual(app.messages.map(message => message.action), ['modelConfig', 'complete']);
-  assert.match(app.panel.semanticState.message, /名称推断完成/);
+  assert.match(app.panel.taskState.message, /名称推断完成/);
   assert.equal(app.panel.busy, false);
   await app.load();
   assert.deepEqual(app.panel.rendered.people, people);
@@ -427,8 +462,8 @@ test('name inference failure preserves the manuscript and previously cached name
   assert.equal(app.panel.rendered, original);
   assert.deepEqual(app.storage.get(resultKey), snapshot);
   assert.equal(app.writes.length, 0);
-  assert.equal(app.panel.semanticState.error, true);
-  assert.match(app.panel.semanticState.message, /名称服务失败.*原稿已保留/);
+  assert.equal(app.panel.taskState.error, true);
+  assert.match(app.panel.taskState.message, /名称服务失败.*原稿已保留/);
   assert.equal(app.panel.busy, false);
 });
 
@@ -448,4 +483,45 @@ test('only current-window activation and current-tab navigation or removal inval
   app.emit('onRemoved', 10);
   await flush();
   assert.equal(app.panel.available, false);
+});
+
+
+test('头像失败不会误报姓名失败，已保存的姓名与完整稿件保留', async () => {
+  const app = await environment({ cached: false });
+  app.setExtract(async () => { throw new Error('视觉服务不可用'); });
+  await app.panel.handlers.transcribe();
+  assert.equal(app.getData().people['0'].name, '张老师');
+  assert.deepEqual(app.storage.get(resultKey).raw, rawTranscript());
+  assert.match(app.panel.taskState.message, /头像提取失败.*视觉服务不可用/);
+  assert.doesNotMatch(app.panel.taskState.message, /发言人推断未成功/);
+  assert.equal(app.panel.busy, false);
+});
+
+test('头像处理中切换视频，迟到头像不渲染也不落库', async () => {
+  const app = await environment();
+  const started = deferred(), old = deferred();
+  app.setExtract(options => { started.resolve(options); return old.promise; });
+  const pending = app.panel.handlers.transcribe();
+  const options = await started.promise;
+  app.switchTab(20);
+  app.emit('onActivated', { tabId: 20, windowId: 1 });
+  assert.equal(options.signal.aborted, true);
+  await flush();
+  const current = app.getData();
+  old.resolve({ '0': 'late-avatar' });
+  await pending;
+  assert.equal(app.getData(), current);
+  assert.equal(app.writes.some(write => write.key === avatarKey), false);
+});
+
+test('手动重新推断清空旧照片关联，保留正文和逐词数据', async () => {
+  const app = await environment();
+  app.storage.set(avatarKey, { '0': 'old-photo' });
+  await app.load();
+  assert.equal(app.getData().avatars['0'], 'old-photo');
+  const raw = app.getData().raw;
+  await app.panel.handlers.identify();
+  assert.deepEqual(plain(app.getData().avatars), {});
+  assert.deepEqual(app.storage.get(avatarKey), {});
+  assert.equal(app.getData().raw, raw);
 });

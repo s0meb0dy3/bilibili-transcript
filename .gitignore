@@ -1,16 +1,15 @@
-# Local credentials and model request/checkpoint cache
+# 本地密钥、私有资料与模型缓存
 .env
 .env.*
 !.env.example
 .private/
-# Local API reference currently contains credentials
 /docs/bailian-api.md
 *.pem
 *.key
 *.p12
 *.pfx
 
-# Generated packages, downloads, screenshots and reports
+# 下载素材、构建产物与测试报告
 /artifacts/
 /dist/
 /coverage/
@@ -18,15 +17,24 @@
 *.crx
 *.log
 *.partial.*
+*.m4a
+*.m4s
+*.mp3
+*.wav
+*.flac
+*.aac
+*.mp4
+*.webm
+*.mov
 
-# Dependencies and Python packaging helpers
+# 依赖与本地运行环境
 node_modules/
 .venv/
 venv/
 __pycache__/
 *.py[cod]
 
-# OS and editor files
+# 系统与编辑器临时文件
 .DS_Store
 .AppleDouble
 Thumbs.db

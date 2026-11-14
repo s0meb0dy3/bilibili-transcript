@@ -47,12 +47,12 @@ test('unsupported pages and missing active tabs never receive snapshot messages'
   assert.equal(bridge.messages.length, 0);
 });
 
-test('tracks, subtitles and playback preserve their explicit tab and video key', async () => {
+test('identity metadata, audio info and playback preserve their explicit tab and video key', async () => {
   const bridge = environment();
   const data = { timeMs: 1200, paused: true, key: 'BVexample:1' };
   bridge.setResponse(async () => ({ ok: true, data }));
-  for (const action of ['tracks', 'subtitle', 'playback']) {
-    const payload = { tabId: 20, key: 'BVexample:1', ...(action === 'subtitle' ? { url: 'https://subtitle.test/a' } : {}) };
+  for (const action of ['identityMetadata', 'audioInfo', 'playback']) {
+    const payload = { tabId: 20, key: 'BVexample:1' };
     assert.equal(await bridge.request(action, payload), data);
     assert.deepEqual(bridge.messages.at(-1), { tabId: 20, message: {
       channel: 'bili-transcript-tab', action, payload
@@ -72,7 +72,7 @@ test('sendMessage connection failures explain how to retry and allow a later suc
 test('bridge returns page errors and explains missing responses', async () => {
   const bridge = environment();
   bridge.setResponse(async () => ({ ok: false, error: '视频已切换，请重试' }));
-  await assert.rejects(bridge.request('tracks', { tabId: 10, key: 'BVexample:1' }), /视频已切换，请重试/);
+  await assert.rejects(bridge.request('audioInfo', { tabId: 10, key: 'BVexample:1' }), /视频已切换，请重试/);
   bridge.setResponse(async () => undefined);
   await assert.rejects(bridge.request('snapshot'), /视频页没有响应.*刷新.*重试/);
 });

@@ -1,26 +1,17 @@
-// Runs in Bilibili's page world. Only this adapter reads page globals.
+// 运行在页面主环境，集中读取 B站数据和播放器。
 (() => {
   if (window.__biliTranscriptBridge) return;
   window.__biliTranscriptBridge = true;
 
-  const playerURLs = new Map();
-  // Downloaded audio lives in the page (CDN trusts its Referer); the side panel pulls it in chunks.
+  // 音频留在页面内，由侧栏按片读取。
   let audioCache = null;
-  new PerformanceObserver(list => {
-    for (const entry of list.getEntries()) {
-      if (!entry.name.startsWith('https://api.bilibili.com/x/player/')) continue;
-      if (!/\/player\/(wbi\/)?v2\?/.test(entry.name)) continue;
-      const cid = new URL(entry.name).searchParams.get('cid');
-      if (cid) playerURLs.set(cid, entry.name);
-    }
-  }).observe({ type: 'resource', buffered: true });
 
   function context() {
     const bvid = location.pathname.match(/\/video\/(BV[\w]+)/)?.[1];
     if (!bvid) return null;
     const state = window.__INITIAL_STATE__;
     const video = state?.videoData;
-    // Do not mix a newly navigated URL with the previous video's page state.
+    // 页面切换时，等待地址与视频数据一致。
     if (video?.bvid !== bvid) return null;
     const part = Number(new URL(location.href).searchParams.get('p') || 1);
     const page = video.pages?.find(item => item.page === part);
@@ -37,46 +28,8 @@
 
   function assertCurrent(expected) {
     const current = context();
-    if (!current || current.key !== expected) throw new Error('视频已切换，请重新获取字幕');
+    if (!current || current.key !== expected) throw new Error('视频已切换，请重新转写');
     return current;
-  }
-
-  async function tracks(key) {
-    const current = assertCurrent(key);
-    // Reuse the player's signed URL rather than implementing Bilibili's WBI signing.
-    const url = playerURLs.get(current.cid);
-    if (!url) throw new Error('播放器尚未就绪，请稍后重试');
-    const response = await fetch(url, { credentials: 'include', signal: AbortSignal.timeout(15000) });
-    if (!response.ok) throw new Error(`字幕信息获取失败（HTTP ${response.status}）`);
-    const result = await response.json();
-    assertCurrent(key);
-    if (result.code !== 0) {
-      if (result.code === -101) throw new Error('请先登录 B 站，再重试获取字幕');
-      throw new Error(`字幕信息获取失败：${result.message || result.code}`);
-    }
-    if (!result.data?.subtitle) throw new Error('字幕信息解析失败，请刷新页面后重试');
-    if (result.data.need_login_subtitle) throw new Error('请先登录 B 站，再重试获取字幕');
-    return result.data.subtitle.subtitles
-      .filter(track => /^(ai-)?zh(?:-|$)/i.test(track.lan))
-      .map(track => ({
-        id: track.id_str || String(track.id), language: track.lan,
-        name: track.lan_doc, automatic: track.lan.startsWith('ai-'),
-        url: new URL(track.subtitle_url, location.href).href
-      }))
-      .sort((a, b) => Number(b.language === 'ai-zh') - Number(a.language === 'ai-zh'));
-  }
-
-  async function subtitle(key, url) {
-    assertCurrent(key);
-    const address = new URL(url);
-    if (address.protocol !== 'https:' || !['hdslb.com', 'bilibili.com'].some(domain => address.hostname.endsWith(`.${domain}`))) {
-      throw new Error('字幕地址不属于 B 站');
-    }
-    const response = await fetch(address.href, { signal: AbortSignal.timeout(20000) });
-    if (!response.ok) throw new Error(`字幕正文获取失败（HTTP ${response.status}），请刷新字幕后重试`);
-    const data = await response.json();
-    assertCurrent(key);
-    return data;
   }
 
   window.addEventListener('message', async event => {
@@ -93,6 +46,43 @@
           const current = assertCurrent(payload.key);
           const video = document.querySelector('.bpx-player-video-wrap video') || document.querySelector('video');
           data = video ? { key: current.key, timeMs: video.currentTime * 1000, paused: video.paused } : null;
+          break;
+        }
+        case 'framesAt': {
+          assertCurrent(payload.key);
+          const video = document.querySelector('.bpx-player-video-wrap video') || document.querySelector('video');
+          if (!video) throw new Error('播放器尚未就绪，请稍后重试');
+          const times = (payload.times || []).filter(value => Number.isFinite(value) && value >= 0).slice(0, 40);
+          const resume = { time: video.currentTime, paused: video.paused };
+          video.pause();
+          const frames = [];
+          try {
+            for (const timeMs of times) {
+              assertCurrent(payload.key);
+              const seconds = Math.min(timeMs / 1000, Math.max(0, video.duration - 0.05));
+              if (Math.abs(video.currentTime - seconds) > 0.01) {
+                await new Promise((resolve, reject) => {
+                  const done = () => { clearTimeout(timer); video.removeEventListener('seeked', done); resolve(); };
+                  const timer = setTimeout(() => {
+                    video.removeEventListener('seeked', done);
+                    reject(new Error('视频画面定位超时，请稍后重试'));
+                  }, 10000);
+                  video.addEventListener('seeked', done);
+                  video.currentTime = seconds;
+                });
+              }
+              await new Promise(resolve => setTimeout(resolve, 150));
+              const canvas = document.createElement('canvas');
+              canvas.width = 1280;
+              canvas.height = Math.round(video.videoHeight * 1280 / video.videoWidth);
+              canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+              frames.push({ timeMs, dataUrl: canvas.toDataURL('image/jpeg', 0.82) });
+            }
+          } finally {
+            video.currentTime = resume.time;
+            if (!resume.paused) await video.play().catch(() => {});
+          }
+          data = frames;
           break;
         }
         case 'seek': {
@@ -119,7 +109,7 @@
           if (playurl.code !== 0) throw new Error(`音轨地址获取失败：${playurl.message || playurl.code}`);
           const audio = playurl.data?.dash?.audio?.filter(item => /mp4a/.test(item.codecs)).sort((a, b) => b.bandwidth - a.bandwidth)[0];
           if (!audio) throw new Error('当前视频没有可访问的 AAC 音轨');
-          // Page context supplies Bilibili's Referer, so the CDN does not reject it as a hotlink.
+          // 页面请求自带来源，避免 CDN 防盗链拒绝。
           const media = await fetch(audio.baseUrl || audio.base_url, { signal: AbortSignal.timeout(120000) });
           if (!media.ok) throw new Error(`音频下载被服务器拒绝（HTTP ${media.status}）`);
           audioCache = { key: current.key, type: media.headers.get('content-type') || 'audio/mp4', bytes: new Uint8Array(await media.arrayBuffer()) };
@@ -158,8 +148,6 @@
           } };
           break;
         }
-        case 'tracks': data = await tracks(payload.key); break;
-        case 'subtitle': data = await subtitle(payload.key, payload.url); break;
         default: return;
       }
       window.postMessage({ channel: 'bili-transcript-response', id, data }, location.origin);
