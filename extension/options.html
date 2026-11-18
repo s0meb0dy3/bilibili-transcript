@@ -3,31 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>B站逐字稿 · 模型设置</title>
+  <title>B站视频 AI 助手 · 设置</title>
   <link rel="stylesheet" href="options.css">
 </head>
 <body>
   <main>
-    <h1>模型设置</h1>
-    <p>密钥仅保存在浏览器本地，不回显。音频转写与发言人名称推断分别配置，只有在侧栏确认后才上传内容。</p>
-    <form id="config">
-      <h2>百炼：音频转写与说话人区分</h2>
-      <label for="bailian-key">百炼 API key（北京地域）</label>
-      <input id="bailian-key" type="password" autocomplete="off" placeholder="留空保留已保存的密钥">
-      <label for="bailian-model">ASR 模型</label>
-      <input id="bailian-model" value="qwen-audio-3.1-asr-flash-filetrans" required>
-      <p class="hint">原始 M4A 直接上传。speaker_id 是匿名聚类，不是真实身份。</p>
-      <button type="button" id="clear-bailian">清除百炼密钥</button>
-      <h2>DeepSeek：可选推断发言人名称</h2>
-      <label for="api-key">DeepSeek API key</label>
-      <input id="api-key" type="password" autocomplete="off" placeholder="留空保留已保存的密钥">
-      <label for="model">分段模型</label>
-      <input id="model" value="deepseek-flash" required>
-      <p class="hint">用于推断发言人姓名；不配置则只显示“未知发言人”及编号，分段不受影响。</p>
-      <div class="actions"><button type="submit">保存配置</button><button id="clear" type="button">清除 DeepSeek 密钥</button></div>
-    </form>
-    <p id="status" role="status"></p>
+    <h1>B站视频 AI 助手</h1>
+    <p>模型密钥由本地 Agent 服务从项目 <code>.env</code> 读取，插件不保存或接收 provider 密钥。</p>
+    <h2>启动本地服务</h2>
+    <pre>npm run agent:dev</pre>
+    <p class="hint">启动后回到 B站视频页，在侧栏点击“开始分析”。服务只监听本机地址，处理结果仍显示在插件侧栏。</p>
+    <p id="status" role="status">当前配置方式：本地 Agent .env</p>
   </main>
-  <script src="options.js"></script>
 </body>
 </html>

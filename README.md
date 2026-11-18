@@ -1,38 +1,33 @@
-# B站逐字稿 0.5.0
+# B站视频 AI 助手 0.6.0
 
 Chrome / Edge 原生侧栏插件：下载当前 B站视频的原始 M4A，使用阿里云百炼 ASR 生成带时间和匿名说话人的逐字稿。本地规则按完整 ASR 句子分段，不读取平台字幕、不补标点、不调用大模型分段。
 
-生成新稿需要百炼 API key，并须主动确认音频上传及付费转写；没有 key 仍可阅读本地缓存。DeepSeek 独立可选，仅用于发言人姓名/角色推断，不影响基础逐字稿。插件无需构建或本地服务器。
-
 ## 安装与使用
 
-需要 Chrome / Edge 116+。
+需要 Chrome / Edge 116+ 和 Node.js ≥22.19.0。
 
-1. 在 `chrome://extensions` 或 `edge://extensions` 开启开发者模式，加载已解压的 [extension](./extension/) 目录。
-2. 右键工具栏插件图标 → **设置**，保存百炼 API key；可选配置 DeepSeek。密钥独立保存于本机，不回显。
-3. 打开或刷新 B站普通视频页，点击插件图标打开原生侧栏。已有缓存直接读取，无缓存不自动调用云服务。
-4. 点击“转写音频”并确认上传及收费提示。转写后自动分段、推断发言人并提取头像；身份或头像处理失败不影响已生成稿件，可稍后重试。
+1. 执行 `npm ci`，参考 [.env.example](./.env.example) 在根目录 `.env` 配置 `BAILIAN_API_KEY` 和 `DEEPSEEK_API_KEY`。
+2. 执行 `npm run agent:dev`；服务只监听 `127.0.0.1:43127`，插件自动连接，不保存模型密钥。
+3. 在扩展管理页加载已解压的 [extension](./extension/) 目录。更新源码后重新加载扩展，再刷新 B 站视频页。
+4. 打开侧栏，点击“开始分析”。使用顶部“总结 / 转写”页签切换结果。
 
-百炼默认模型为 `qwen-audio-3.1-asr-flash-filetrans`，DeepSeek 默认为 `deepseek-flash`。更新源码后重新加载扩展并刷新视频页，不要同时加载多个版本。
+## 分析流程
 
-## 阅读与播放
+没有缓存时，插件把当前视频音频上传至本地服务，由百炼转写和区分匿名说话人；已有转写时直接复用。本地服务把视频标题、简介、UP 主公开信息及完整转写一次性发给 DeepSeek。本地服务注册 `web_search` 工具；模型开启 high 思考后自主决定是否搜索、搜索什么和搜索几次。工具调用 DeepSeek Search API，使用 `DEEPSEEK_API_KEY`（也可单独配置 `DEEPSEEK_SEARCH_API_KEY`），只返回标题、URL和摘要，不发送转写原句或私人资料。
 
-- 原始 M4A 直接上传，不转码；ASR 句子、时间和 speaker 保留原样，识别错误不自动纠正。
-- speaker 变化是硬边界；同一人长发言按约 **250 字**、仅在完整句子间分段。200～300 字是阅读目标，不是硬上限，长句不拆分。
-- 点击正文句子从该 ASR 句起点播放；点击时间戳跳转但保留播放/暂停状态。拖选复制不触发播放。
-- 当前句及段落高亮、自动跟随；手动阅读后暂停跟随，可恢复。支持分 P、刷新读取及 Markdown 导出。
-- 发言人推断将视频标题、简介、分 P 标题、UP主公开资料及完整转写发送至 DeepSeek，姓名需在输入资料中出现，角色由模型推断；这不保证编号与身份对应正确。未知者显示“未知发言人＋编号”，不代表身份认证。
-- 头像提取将少量视频帧发送至百炼视觉模型，优先匹配姓名，其次采用本人发言回合的单人特写；不确定时使用数字或姓名首字圆形占位。
+模型通过 `finalize_video_result` 提交简短摘要和 `speakerId → 姓名或角色` 映射。身份是文本推断，不是声纹认证；无法判断时显示未知。不处理头像和截图。不改写逐字稿或时间戳。
 
-## 缓存与取消
+侧栏重新打开只读取按视频分 P 保存的缓存，不会自动调用云服务。转写页可点击原句和时间跳转，支持播放高亮与跟随。处理期间可取消，但已提交的云端请求可能继续运行或产生费用。详见 [本地服务接口](./agent/README.md)。
 
-文稿按 `asr-document:v1:<bvid>:<cid>` 缓存原始 ASR、句子和段落。任务按 `asr-task:v1:<bvid>:<cid>:<model>` 保存，模型不同不混用任务。刷新或重新打开只读取本地结果，不自动提交云任务。
+## Langfuse 观测（可选）
 
-取消停止本地等待和后续处理，**不保证取消云端任务或免除费用**。再次主动转写可续接已保存的同模型 task ID，避免重复下载、上传和提交；失败任务重新提交可能再次收费。标签页、视频和分 P 切换隔离旧任务及迟到结果。
+在同一个项目根目录 `.env` 里填写 `LANGFUSE_BASE_URL=http://127.0.0.1:3000` 及 Langfuse 项目的 `LANGFUSE_PUBLIC_KEY`、`LANGFUSE_SECRET_KEY`，再重启本地 Agent。未填齐时不启用追踪；不会默认向云端发送数据。
+
+每个分析任务是一条 `analyze-video` trace，包含音频接收、百炼转写、Pi Agent、每轮 Agent（`turn-1`、`turn-2`）、模型请求和工具调用。现在会记录搜索词、搜索结果的标题/URL/摘要、最终 speaker 映射和摘要，便于复盘；不上传真实逐字稿、音频、模型隐藏推理或密钥。模型输入仍然可以包含完整转写，但追踪只保留句数、说话人数、字符数和上下文消息数量。不新增日志文件，不改变插件界面。现有任务文件仍用于结果读取和 SSE 重放。
 
 ## 开发与验证
 
-需要 Node.js 22+；无第三方 npm 依赖，无需 `npm install`。
+基础插件无需构建。本地 Agent 实验与完整测试需要 Node.js ≥22.19.0，先执行 `npm ci` 安装锁定的 Pi 依赖。
 
 ```bash
 npm run check
@@ -43,25 +38,6 @@ npm run package
 
 浏览器验证是可选的 Ego 浏览器联调，直接渲染[脱敏 ASR 样例](./fixtures/asr/BV1Gg411D7i7.json)，检查真实播放器跳转和高亮，不调用云服务。打包额外需要 Python 3 标准库，产物位于 `artifacts/`，仅含插件源码及图标。
 
-### 轻量模块
+## 数据边界
 
-| 职责 | 文件 |
-| --- | --- |
-| 编排、文稿及任务缓存 | [app.js](./extension/app.js) |
-| 原始音频上传与异步转写 | [asr.js](./extension/asr.js) |
-| ASR 标准化与整句规则分段 | [transcript.js](./extension/transcript.js) |
-| 页面通信、存储及播放器定位 | [storage.js](./extension/storage.js)、[page-channel.js](./extension/page-channel.js)、[bridge.js](./extension/bridge.js)、[tabs.js](./extension/tabs.js) |
-| 音频分片、模型通信与头像任务 | [audio-loader.js](./extension/audio-loader.js)、[model-client.js](./extension/model-client.js)、[avatar-service.js](./extension/avatar-service.js) |
-| 面板文本句界、请求指纹 | [text.js](./extension/text.js)、[fingerprint.js](./extension/fingerprint.js) |
-| 发言人身份、头像与展示 | [identity.js](./extension/identity.js)、[avatar.js](./extension/avatar.js)、[people.js](./extension/people.js) |
-| 侧栏、高亮、跟随及导出 | [panel.js](./extension/panel.js)、[panel.css](./extension/panel.css) |
-
-主流程为 `audio → transcribeAudio → normalizeTranscript → paragraphize`。文本句界工具只服务面板点击目标；指纹工具只服务请求身份，不包含旧字幕解析或语义分段引擎。
-
-## 数据边界与验证范围
-
-仅处理用户有权访问的视频，不绕过登录、付费或访问限制，不读取或导出 B站 Cookie。百炼接收主动确认上传的音频及头像截图；DeepSeek 接收发言人推断所需文字和公开上下文。真实密钥、私有配置、缓存、音视频及生成产物不得进入公开仓库或发行包。
-
-[ASR 样例说明](./fixtures/README.md)记录约 29 分钟圆桌音频的一次实测：168 个 ASR 句子、5 个 speaker、50 个基础段落。它不保证其他声道或重复识别结果相同，说话人准确率尚未人工听校。离线测试不能代替安装后权限、CDN 下载和云上传的实机验收。不承诺逐字时间精度或真实身份识别；暂不支持摘要、翻译、直播和其他平台。
-
-[产品需求](./docs/PRD.md) · [侧栏布局参考](./docs/images/sidepanel.png)
+仅处理用户有权访问的视频。百炼接收音频，DeepSeek 接收转写与视频资料；开启搜索后，DeepSeek Search API 接收公开身份查询。不要提交或分享真实密钥、私有配置、缓存和音视频。

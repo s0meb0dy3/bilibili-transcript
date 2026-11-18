@@ -28,18 +28,23 @@ const paragraphs=paragraphize(cues);
 let seekCalls=0;
 const panel=new TranscriptPanel(URL.createObjectURL(new Blob([${JSON.stringify(css)}],{type:'text/css'})),{
   seek(ms,options={}){const video=document.querySelector('video');seekCalls++;video.currentTime=ms/1000;if(options.play)video.play();},
-  follow(){},refresh(){},export(){},transcribe(){},identify(){},cancelTask(){}
+  follow(){},refresh(){},analyze(){},cancelTask(){}
 });
 Object.assign(panel.host.style,{position:'fixed',right:'0',top:'0',height:'100vh',width:'420px',zIndex:'2147483647',background:'white'});
 panel.setContext({title:document.title,part:1,partTitle:''});
 panel.renderDocument({cues,paragraphs,source:'百炼 ASR（离线样例）',savedAt:Date.now()});
 const video=document.querySelector('video');
 video.addEventListener('timeupdate',()=>panel.setActive(activeCueAt(cues,video.currentTime*1000)));
-window.__asrTest={get seekCalls(){return seekCalls},paragraphs:paragraphs.length};
+panel.setSummary('离线测试摘要');
+ window.__asrTest={get seekCalls(){return seekCalls},paragraphs:paragraphs.length};
 })();`);
 await page.waitForFunction(() => document.querySelector('#bili-transcript-root')?.shadowRoot?.querySelectorAll('.paragraph').length > 0, undefined, { timeout: 5000 });
 const target = await page.evaluate(() => {
-  const sentence = document.querySelector('#bili-transcript-root').shadowRoot.querySelectorAll('.sentence')[1];
+  const root = document.querySelector('#bili-transcript-root').shadowRoot;
+  if (root.querySelector('.summary').hidden || root.querySelector('.summary').textContent !== '离线测试摘要' || !root.querySelector('.transcript').hidden) throw new Error('总结页签显示异常');
+  root.querySelectorAll('.view-tab')[1].click();
+  if (!root.querySelector('.summary').hidden || root.querySelector('.transcript').hidden) throw new Error('转写页签切换失败');
+  const sentence = root.querySelectorAll('.sentence')[1];
   return { cueId: sentence.querySelector('.cue').dataset.cueId, text: sentence.textContent };
 });
 const expected = raw.transcripts.flatMap(transcript => transcript.sentences).sort((a, b) => a.begin_time - b.begin_time)[Number(target.cueId) - 1].begin_time / 1000;
@@ -49,7 +54,7 @@ await page.waitForFunction(() => !!document.querySelector('#bili-transcript-root
 console.log(await page.evaluate(() => {
   document.querySelector('video').pause();
   const root = document.querySelector('#bili-transcript-root').shadowRoot;
-  return { source: root.querySelector('.source').textContent, labels: [...new Set([...root.querySelectorAll('.person-name')].map(node => node.textContent))], paragraphs: root.querySelectorAll('.paragraph').length, highlights: root.querySelectorAll('.active-cue').length, seekCalls: window.__asrTest.seekCalls };
+  return { labels: [...new Set([...root.querySelectorAll('.person-name')].map(node => node.textContent))], paragraphs: root.querySelectorAll('.paragraph').length, highlights: root.querySelectorAll('.active-cue').length, seekCalls: window.__asrTest.seekCalls };
 }));
 console.log({ screenshot: await page.screenshot({ path: root + '/artifacts/asr-sidebar-preview.png' }) });
 await task.finish({ keep: [] });

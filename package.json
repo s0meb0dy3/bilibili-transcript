@@ -1,15 +1,23 @@
 {
   "name": "bilibili-transcript",
   "private": true,
-  "version": "0.5.0",
+  "version": "0.6.0",
   "type": "module",
   "engines": {
-    "node": ">=22"
+    "node": ">=22.19.0"
   },
   "scripts": {
     "test": "node --test tests/*.test.mjs",
     "check": "node scripts/check.mjs",
+    "agent:dev": "node agent/server.mjs",
     "test:browser": "node scripts/browser-check.mjs",
     "package": "npm run check && python3 scripts/package.py"
+  },
+  "dependencies": {
+    "@earendil-works/pi-agent-core": "1.5.2",
+    "@earendil-works/pi-ai": "1.5.2",
+    "@langfuse/otel": "6.1.1",
+    "@langfuse/tracing": "6.1.1",
+    "@opentelemetry/sdk-trace-base": "2.12.1"
   }
 }

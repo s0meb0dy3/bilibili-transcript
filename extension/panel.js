@@ -41,7 +41,6 @@ export class TranscriptPanel {
   constructor(styleURL, handlers) {
     this.handlers = handlers;
     this.follow = true;
-    this.rawVisible = false;
     this.available = true;
     this.host = element('div');
     this.host.id = 'bili-transcript-root';
@@ -54,45 +53,16 @@ export class TranscriptPanel {
     this.aside = element('main', 'panel');
     this.aside.setAttribute('aria-label', '视频逐字稿');
     this.title = element('h1', 'video-title', '逐字稿');
-    this.source = element('div', 'source');
-    this.refresh = element('button', 'tool-button', '刷新');
-    this.refresh.onclick = () => handlers.refresh();
-    this.exportButton = element('button', 'tool-button', '导出');
-    this.exportButton.disabled = true;
-    this.exportButton.onclick = () => handlers.export();
-    const tools = element('div', 'tools');
-    this.transcribeButton = element('button', 'tool-button', '转写音频');
-    this.transcribeButton.onclick = () => {
-      this.confirmAction = 'transcribe';
-      this.consentText.textContent = '将原始音频上传百炼转写，再将完整转写、视频及UP主公开资料发送至 DeepSeek 推断发言人，最后将少量视频截图上传百炼提取头像。可能产生费用，原始音频不转码。是否继续？';
-      this.uploadConsent.hidden = false;
-    };
-    tools.append(this.transcribeButton, this.refresh, this.exportButton);
-    const aiTools = element('div', 'ai-tools');
-    this.cancelTask = element('button', 'tool-button', '取消');
-    this.cancelTask.hidden = true;
-    this.cancelTask.onclick = () => handlers.cancelTask();
-    this.identityButton = element('button', 'tool-button', '推断发言人');
-    this.identityButton.disabled = true;
-    this.identityButton.onclick = () => {
-      this.confirmAction = 'identify';
-      this.consentText.textContent = '将视频标题、简介、分P标题、UP主公开昵称/简介/认证信息及完整转写发送至 DeepSeek 推断姓名。不是声纹认证，可能有误；证据不足保留未知。是否继续？';
-      this.uploadConsent.hidden = false;
-    };
-    aiTools.append(this.identityButton, this.cancelTask);
-    this.uploadConsent = element('div', 'upload-consent');
-    this.uploadConsent.hidden = true;
-    this.consentText = element('p');
-    this.uploadConsent.append(this.consentText);
-    const confirm = element('button', 'tool-button', '确认上传并开始');
-    confirm.onclick = () => {
-      this.uploadConsent.hidden = true;
-      if (this.confirmAction === 'transcribe') handlers.transcribe();
-      else handlers.identify();
-    };
-    const dismiss = element('button', 'text-button', '暂不上传');
-    dismiss.onclick = () => { this.uploadConsent.hidden = true; };
-    this.uploadConsent.append(confirm, dismiss);
+    this.nav = element('nav', 'view-tabs');
+    this.summaryTab = element('button', 'view-tab', '总结');
+    this.transcriptTab = element('button', 'view-tab active', '转写');
+    this.summaryTab.onclick = () => this.setView('summary');
+    this.transcriptTab.onclick = () => this.setView('transcript');
+    this.nav.append(this.summaryTab, this.transcriptTab);
+    this.analyzeButton = element('button', 'tool-button', '开始分析');
+    this.analyzeButton.title = '分析会调用云服务，可能产生费用';
+    this.analyzeButton.onclick = () => this.busy ? handlers.cancelTask() : handlers.analyze();
+    this.nav.append(this.analyzeButton);
     this.taskStatus = element('div', 'task-status');
     this.taskStatus.setAttribute('role', 'status');
     this.taskStatus.hidden = true;
@@ -108,9 +78,9 @@ export class TranscriptPanel {
     this.body.tabIndex = 0;
     this.body.setAttribute('aria-label', '逐字稿正文');
     this.transcript = element('div', 'transcript');
-    this.raw = element('pre', 'raw');
-    this.raw.hidden = true;
-    this.body.append(this.transcript, this.raw);
+    this.summary = element('div', 'summary');
+    this.body.append(this.transcript, this.summary);
+    this.summary.hidden = true;
     // 用户滚动才暂停跟随，程序滚动不影响。
     this.body.addEventListener('wheel', () => this.setFollow(false), { passive: true });
     this.body.addEventListener('touchmove', () => this.setFollow(false), { passive: true });
@@ -124,33 +94,25 @@ export class TranscriptPanel {
     this.body.addEventListener('keydown', event => {
       if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(event.key)) this.setFollow(false);
     });
-    const footer = element('footer', 'footer');
-    this.rawButton = element('button', 'text-button', '查看 ASR 原句');
-    this.rawButton.onclick = () => {
-      this.rawVisible = !this.rawVisible;
-      this.raw.hidden = !this.rawVisible;
-      this.transcript.hidden = this.rawVisible;
-      this.rawButton.textContent = this.rawVisible ? '返回逐字稿' : '查看 ASR 原句';
-    };
+    const footer = this.footer = element('footer', 'footer');
     this.followButton = element('button', 'follow-button', '跟随播放中');
     this.followButton.setAttribute('aria-pressed', 'true');
     this.followButton.onclick = () => {
       this.setFollow(!this.follow);
       if (this.follow) this.scrollToActive();
     };
-    footer.append(this.rawButton, this.followButton);
-    this.aside.append(this.title, this.source, tools, aiTools, this.uploadConsent, this.taskStatus, this.status, this.body, footer);
+    footer.append(this.followButton);
+    this.aside.append(this.title, this.nav, this.taskStatus, this.status, this.body, footer);
     root.append(this.aside);
     document.body.append(this.host);
+    this.setView('transcript');
   }
 
   get isOpen() { return true; }
 
   setAvailable(available) {
     this.available = available;
-    this.refresh.disabled = !available;
-    this.transcribeButton.disabled = !available;
-    this.retry.disabled = !available;
+    this.analyzeButton.disabled = !available;
     if (!available) {
       this.title.textContent = '逐字稿';
       this.title.removeAttribute('title');
@@ -170,37 +132,30 @@ export class TranscriptPanel {
   }
 
   setBusy(busy) {
-    this.transcribeButton.disabled = busy || !this.available;
-    this.identityButton.disabled = busy || this.exportButton.disabled;
-    this.refresh.disabled = busy || !this.available;
-    this.cancelTask.hidden = !busy;
+    this.busy = busy;
+    this.analyzeButton.disabled = !this.available;
+    this.analyzeButton.textContent = busy ? '取消' : '开始分析';
   }
 
   setTaskState({ busy = false, message = '', error = false } = {}) {
     this.setBusy(busy);
-    this.cancelTask.hidden = !busy;
     this.taskStatus.textContent = message;
     this.taskStatus.hidden = !message;
     this.taskStatus.classList.toggle('error', error);
-    if (busy) this.uploadConsent.hidden = true;
   }
 
   clear() {
-    this.uploadConsent.hidden = true;
     this.setTaskState();
-    this.identityButton.disabled = true;
     this.transcript.replaceChildren();
-    this.raw.textContent = '';
-    this.source.textContent = '';
-    this.exportButton.disabled = true;
+    this.summary.replaceChildren();
     this.activeCue = null;
     this.activeParagraph = null;
     this.cueNodes = new Map();
     this.paragraphNodes = new Map();
-    this.body.scrollTop = 0;
+    this.setView('transcript');
   }
 
-  renderDocument({ cues, paragraphs, savedAt, source, people = {}, avatars = {} }) {
+  renderDocument({ cues, paragraphs, people = {}, avatars = {} }) {
     this.cueNodes = new Map();
     this.paragraphNodes = new Map();
     this.activeCue = null;
@@ -265,12 +220,28 @@ export class TranscriptPanel {
       this.paragraphNodes.set(paragraph.id, article);
     }
     this.transcript.replaceChildren(fragment);
-    this.raw.textContent = cues.map(cue => `${formatTime(cue.startMs)} → ${formatTime(cue.endMs)}\n${cue.text}`).join('\n\n');
-    this.source.textContent = `${source || '百炼 ASR · 自动识别可能有误'} · ${cues.length} 句 · ${paragraphs.length} 段`;
-    this.source.title = `本地保存于 ${new Date(savedAt).toLocaleString()}`;
-    this.exportButton.disabled = false;
-    this.identityButton.disabled = !cues.length;
     this.body.scrollTop = 0;
+  }
+
+  setView(view) {
+    const summary = view === 'summary';
+    this.summary.hidden = !summary;
+    this.transcript.hidden = summary;
+    this.footer.hidden = summary;
+    this.body.scrollTop = 0;
+    if (!summary && this.follow) this.scrollToActive();
+    this.summaryTab.classList.toggle('active', summary);
+    this.transcriptTab.classList.toggle('active', !summary);
+    this.summaryTab.setAttribute('aria-pressed', String(summary));
+    this.transcriptTab.setAttribute('aria-pressed', String(!summary));
+  }
+
+  setSummary(summary) {
+    this.summary.replaceChildren();
+    const text = typeof summary === 'string' ? summary : summary?.overview;
+    if (text) this.summary.append(element('p', '', text));
+    if (summary?.keyPoints) for (const point of summary.keyPoints) this.summary.append(element('p', '', `• ${point.text || point}`));
+    this.setView('summary');
   }
 
   setFollow(follow, persist = true) {
@@ -294,7 +265,7 @@ export class TranscriptPanel {
   }
 
   scrollToActive() {
-    if (!this.isOpen || this.rawVisible) return;
+    if (!this.isOpen || this.transcript.hidden) return;
     const active = this.cueNodes?.get(this.activeCue)?.[0]?.span;
     if (!active) return;
     const target = active.getBoundingClientRect();
