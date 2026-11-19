@@ -2,6 +2,7 @@ import { readStored, writeStored } from './storage.js';
 import { createTabBridge } from './tabs.js';
 import { TranscriptPanel, activeCueAt } from './panel.js';
 import { loadPageAudio } from './audio-loader.js';
+import { createFaceCapture, cropFaceImage } from './face-capture.js';
 import { createAgentView } from './agent-view.js';
 
 const request = createTabBridge();
@@ -72,7 +73,8 @@ const panel = new TranscriptPanel(chrome.runtime.getURL('panel.css'), {
       const metadata = await request('identityMetadata', { tabId: target.tabId, key: target.key }).catch(() => null);
       if (active.signal.aborted) return;
       context = { ...target, ...metadata };
-      await agentView.analyze();
+      const inspectFaces = await readStored('speakerAvatars').catch(() => false);
+      if (!active.signal.aborted) await agentView.analyze({ inspectFaces: inspectFaces === true });
     } catch (failure) { error = failure; }
     finally {
       if (task === active) {
@@ -97,12 +99,16 @@ const panel = new TranscriptPanel(chrome.runtime.getURL('panel.css'), {
 const agentView = createAgentView({
   getDocument: () => documentData ? { ...documentData, context } : { context },
   loadAudio: (target, signal) => loadPageAudio({ request, context: target, signal }),
+  captureFaces: (target, times, signal) => createFaceCapture({
+    captureFrames: (times, signal) => request('framesAt', { tabId: target.tabId, key: target.key, times }, signal)
+  })(times, signal),
+  cropFace: (...args) => cropFaceImage(...args),
   onProgress: message => panel.setTaskState({ busy: true, message }),
-  onResult: async (result, original, signal) => {
+  onResult: async (result, original, signal, avatars = {}) => {
     const people = Object.fromEntries(Object.entries(result.speakers).map(([id, name]) => [id, { id, name, inferred: true }]));
-    const updated = { ...original, people, agentResult: result, avatars: {} };
+    const updated = { ...original, people, agentResult: result, avatars };
     await writeStored(resultKey(original.context), updated);
-    await writeStored(avatarKey(original.context), {});
+    await writeStored(avatarKey(original.context), avatars);
     if (task && !signal?.aborted) present(updated);
   }
 });

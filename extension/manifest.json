@@ -5,6 +5,7 @@
   "minimum_chrome_version": "116",
   "description": "点击工具栏图标，在浏览器原生侧栏阅读B站逐字稿，点击句子回看。",
   "permissions": ["storage", "unlimitedStorage", "sidePanel", "contextMenus"],
+  "content_security_policy": { "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'" },
   "host_permissions": ["http://127.0.0.1/*", "https://www.bilibili.com/*", "https://api.deepseek.com/*", "https://*.aliyuncs.com/*", "https://*.bilivideo.com/*", "https://*.bilivideo.cn/*", "https://*.hdslb.com/*"],
   "action": {
     "default_title": "打开B站逐字稿侧栏",

@@ -26,6 +26,36 @@ async function complete(request, id) {
   return { task, text };
 }
 
+test('avatar capture is task-scoped, returns candidates, and does not persist JPEGs', async t => {
+  const app = await setup(t, { runner: async ({ inspectFaces }) => {
+    const scan = await inspectFaces({ startMs: 2000, endMs: 4000 });
+    assert.equal(scan.representativeFrames.length, 1);
+    return { ...result, faces: { '0': scan.representativeFrames[0].faces[0].candidateId } };
+  } });
+  const { id } = await (await app.request('/tasks', { method: 'POST', body: JSON.stringify({ document, mode: 'analyze', inspectFaces: true }) })).json();
+  const response = await app.request(`/tasks/${id}/events`);
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let text = '', event;
+  while (!event) {
+    const { value, done } = await reader.read();
+    assert.ok(!done);
+    text += decoder.decode(value, { stream: true });
+    event = text.split('\n\n').filter(block => block.includes('event: capture_faces')).map(block => block.match(/\ndata: (.+)/)?.[1]).find(Boolean);
+  }
+  const { requestId, times } = JSON.parse(event).data;
+  assert.deepEqual(times, [2000, 3000]);
+  const image = '/9j/QVZBVEFS';
+  const submit = requestId => app.request(`/tasks/${id}/faces`, { method: 'POST', body: JSON.stringify({ requestId, frames: [{ timeMs: 2000, image, faces: [{ box: [0.1, 0.2, 0.3, 0.4], score: 0.95 }] }] }) });
+  assert.equal((await submit('stale')).status, 409);
+  assert.equal((await submit(requestId)).status, 200);
+  const { task } = await complete(app.request, id);
+  assert.deepEqual(task.result.faces, { '0': `${requestId}-0-0` });
+  assert.equal((await submit(requestId)).status, 409);
+  for (const suffix of ['.json', '.events.jsonl']) assert.ok(!(await readFile(join(app.root, `.private/agent/tasks/${id}${suffix}`), 'utf8')).includes(image));
+  await reader.cancel();
+});
+
 test('HTTP token, exact Host, extension-only Origin, preflight and validation', async t => {
   const app = await setup(t, { runner: async () => result });
   assert.equal((await fetch(app.url + '/tasks')).status, 401);

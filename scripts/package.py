@@ -12,7 +12,7 @@ output.parent.mkdir(exist_ok=True)
 files = [
     file for file in sorted(source.rglob("*"))
     if file.is_file()
-    and file.suffix in {".js", ".json", ".html", ".css", ".png"}
+    and file.suffix in {".js", ".mjs", ".json", ".html", ".css", ".png", ".wasm", ".tflite", ".txt"}
     and not any(part.startswith(".") for part in file.relative_to(source).parts)
 ]
 

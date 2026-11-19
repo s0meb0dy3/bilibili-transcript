@@ -5,6 +5,27 @@
 
   // 音频留在页面内，由侧栏按片读取。
   let audioCache = null;
+  let frameCapture = null;
+
+  function seekFrame(video, seconds, signal) {
+    if (!video.seeking && Math.abs(video.currentTime - seconds) <= 0.01) return;
+    return new Promise((resolve, reject) => {
+      const cleanup = () => {
+        clearTimeout(timer);
+        video.removeEventListener('seeked', done);
+        signal.removeEventListener('abort', aborted);
+      };
+      const done = () => { cleanup(); resolve(); };
+      const aborted = () => { cleanup(); reject(signal.reason); };
+      const timer = setTimeout(() => {
+        cleanup();
+        reject(new Error('视频画面定位超时，请稍后重试'));
+      }, 10000);
+      signal.addEventListener('abort', aborted, { once: true });
+      video.addEventListener('seeked', done, { once: true });
+      video.currentTime = seconds;
+    });
+  }
 
   function context() {
     const bvid = location.pathname.match(/\/video\/(BV[\w]+)/)?.[1];
@@ -48,39 +69,52 @@
           data = video ? { key: current.key, timeMs: video.currentTime * 1000, paused: video.paused } : null;
           break;
         }
+        case 'cancelFramesAt': {
+          if (frameCapture?.id === payload.captureId) frameCapture.controller.abort();
+          break;
+        }
         case 'framesAt': {
           assertCurrent(payload.key);
           const video = document.querySelector('.bpx-player-video-wrap video') || document.querySelector('video');
-          if (!video) throw new Error('播放器尚未就绪，请稍后重试');
+          if (!video?.videoWidth || !Number.isFinite(video.duration)) throw new Error('播放器尚未就绪，请稍后重试');
+          if (frameCapture) throw new Error('播放器正在截取画面，请稍后重试');
           const times = (payload.times || []).filter(value => Number.isFinite(value) && value >= 0).slice(0, 40);
           const resume = { time: video.currentTime, paused: video.paused };
-          video.pause();
+          const controller = new AbortController();
+          const { signal } = controller;
+          const canvas = document.createElement('canvas');
+          const drawing = canvas.getContext('2d');
           const frames = [];
+          frameCapture = { id: payload.captureId, controller };
           try {
+            video.pause();
             for (const timeMs of times) {
+              signal.throwIfAborted();
               assertCurrent(payload.key);
               const seconds = Math.min(timeMs / 1000, Math.max(0, video.duration - 0.05));
-              if (Math.abs(video.currentTime - seconds) > 0.01) {
-                await new Promise((resolve, reject) => {
-                  const done = () => { clearTimeout(timer); video.removeEventListener('seeked', done); resolve(); };
-                  const timer = setTimeout(() => {
-                    video.removeEventListener('seeked', done);
-                    reject(new Error('视频画面定位超时，请稍后重试'));
-                  }, 10000);
-                  video.addEventListener('seeked', done);
-                  video.currentTime = seconds;
-                });
-              }
-              await new Promise(resolve => setTimeout(resolve, 150));
-              const canvas = document.createElement('canvas');
-              canvas.width = 1280;
-              canvas.height = Math.round(video.videoHeight * 1280 / video.videoWidth);
-              canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-              frames.push({ timeMs, dataUrl: canvas.toDataURL('image/jpeg', 0.82) });
+              await seekFrame(video, seconds, signal);
+              signal.throwIfAborted();
+              assertCurrent(payload.key);
+              const actualTimeMs = Math.round(video.currentTime * 1000);
+              if (Math.abs(actualTimeMs - timeMs) > 500) continue;
+              canvas.width = Math.min(video.videoWidth, 1280);
+              canvas.height = Math.round(video.videoHeight * canvas.width / video.videoWidth);
+              let dataUrl;
+              do {
+                drawing.drawImage(video, 0, 0, canvas.width, canvas.height);
+                dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+                if (dataUrl.length <= 280_000) break;
+                canvas.width = Math.max(1, Math.floor(canvas.width * 0.75));
+                canvas.height = Math.max(1, Math.floor(canvas.height * 0.75));
+              } while (true);
+              frames.push({ timeMs: actualTimeMs, dataUrl });
             }
           } finally {
-            video.currentTime = resume.time;
-            if (!resume.paused) await video.play().catch(() => {});
+            frameCapture = null;
+            if (context()?.key === payload.key) {
+              video.currentTime = resume.time;
+              if (!resume.paused) video.play().catch(() => {});
+            }
           }
           data = frames;
           break;

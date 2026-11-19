@@ -20,7 +20,11 @@ export function resultSchema({ speakerIds }) {
         type: 'object', additionalProperties: false, required: speakerIds,
         properties: Object.fromEntries(speakerIds.map(id => [id, label]))
       },
-      summary: label
+      summary: label,
+      faces: {
+        type: 'object', additionalProperties: false,
+        properties: Object.fromEntries(speakerIds.map(id => [id, { anyOf: [{ type: 'string', minLength: 1 }, { type: 'null' }] }]))
+      }
     }
   };
 }
@@ -32,6 +36,9 @@ export function validateResult(result, { speakerIds }) {
       speakerIds.some(id => !Object.hasOwn(speakers, id) || typeof speakers[id] !== 'string' || !speakers[id].trim())) {
     throw new Error(`speakers 必须覆盖全部原始 speakerId（${speakerIds.join('、')}），不能添加编号或留空`);
   }
-  if (typeof summary !== 'string' || !summary.trim() || Object.keys(result).length !== 2) throw new Error('只提交 speakers 和非空 summary');
-  return { speakers, summary };
+  if (typeof summary !== 'string' || !summary.trim() || Object.keys(result).some(key => !['speakers', 'summary', 'faces'].includes(key))) throw new Error('只提交 speakers、可选 faces 和非空 summary');
+  if (result.faces !== undefined && (Array.isArray(result.faces) || !result.faces || typeof result.faces !== 'object' || Object.keys(result.faces).length !== speakerIds.length || speakerIds.some(id => !Object.hasOwn(result.faces, id) || (result.faces[id] !== null && (typeof result.faces[id] !== 'string' || !result.faces[id].trim()))))) throw new Error('faces 必须覆盖全部原始 speakerId，值为 candidateId 或 null');
+  const candidates = Object.values(result.faces || {}).filter(id => id !== null);
+  if (new Set(candidates).size !== candidates.length) throw new Error('同一个头像候选不能分配给多个说话人');
+  return result.faces === undefined ? { speakers, summary } : { speakers, summary, faces: result.faces };
 }

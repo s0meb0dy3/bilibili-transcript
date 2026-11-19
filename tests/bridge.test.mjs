@@ -27,7 +27,7 @@ function environment() {
     postMessage(message) { messages.push(message); }
   };
   const location = { pathname: '/video/BVtest/', href: 'https://www.bilibili.com/video/BVtest/', origin: 'https://www.bilibili.com' };
-  vm.runInNewContext(source, { window, location, URL, Number, setTimeout: (fn, ms) => ms === 150 ? setTimeout(fn, 0) : setTimeout(fn, ms), clearTimeout,
+  vm.runInNewContext(source, { window, location, URL, Number, AbortController, setTimeout, clearTimeout,
     document: {
       querySelector: () => video,
       createElement: () => ({ getContext: () => ({ drawImage() {} }), toDataURL: () => 'data:image/jpeg;base64,frame' })

@@ -1,1 +1,9 @@
-// Provider 密钥属于本地 Agent 服务，不在扩展设置中保存。
+import { readStored, writeStored } from './storage.js';
+
+const checkbox = document.querySelector('#speaker-avatars');
+const status = document.querySelector('#status');
+checkbox.checked = (await readStored('speakerAvatars')) === true;
+checkbox.addEventListener('change', async () => {
+  await writeStored('speakerAvatars', checkbox.checked);
+  status.textContent = '设置已保存';
+});

@@ -34,6 +34,20 @@ test('首轮传入完整转写及资料，按需搜索后修正提交', async ()
   assert.ok(script.contexts[2].messages.some(message => message.role === 'toolResult' && message.toolName === 'finalize_video_result' && message.isError));
 });
 
+test('inspect_faces returns metadata and attaches each image once to next request', async () => {
+  const range = { startMs: 0, endMs: 1000 };
+  const visual = runtime([call('inspect_faces', range), call('inspect_faces', range), call('finalize_video_result', { ...result, faces: { '0': 'req-0-0', '1': null } })]);
+  let scans = 0;
+  const events = []; const messages = [];
+  const output = await runPiTask({ document, runtime: visual.runtime, inspectFaces: async range => { scans++; return { range, detections: [], representativeFrames: [{ timeMs: 10, image: 'abc', faces: [{ box: [0.1, 0.1, 0.2, 0.3], candidateId: 'req-0-0' }] }] }; }, onEvent: event => events.push(event), onMessages: state => messages.push(state) });
+  assert.deepEqual(output.faces, { '0': 'req-0-0', '1': null });
+  assert.equal(visual.contexts[1].messages.at(-1).content.filter(block => block.type === 'image').length, 1);
+  assert.equal(scans, 1);
+  assert.ok(visual.contexts[2].messages.every(message => !Array.isArray(message.content) || message.content.every(block => block.type !== 'image')));
+  assert.equal(JSON.stringify(events).includes('abc'), false);
+  assert.equal(JSON.stringify(messages).includes('abc'), false);
+});
+
 test('没有搜索配置时只暴露提交工具，首轮可以直接完成', async () => {
   const script = runtime([call('finalize_video_result', result)]);
   assert.deepEqual(await runPiTask({ document, runtime: script.runtime }), result);
@@ -53,7 +67,9 @@ test('轮次与工具预算仍然生效', async () => {
   await assert.rejects(runPiTask({ document, runtime: turns.runtime, maxTurns: 2 }));
   assert.equal(turns.faux.state.callCount, 2);
   const tools = runtime([call('web_search', { query: '节目' }), call('finalize_video_result', result)]);
-  await assert.rejects(runPiTask({ document, runtime: tools.runtime, webSearch: async () => [], maxToolCalls: 1 }));
+  let searches = 0;
+  assert.deepEqual(await runPiTask({ document, runtime: tools.runtime, webSearch: async () => { searches++; return []; }, maxToolCalls: 1 }), result);
+  assert.equal(searches, 0);
 });
 
 test('校验拒绝缺失、多出或空白的说话人标签与空摘要', () => {

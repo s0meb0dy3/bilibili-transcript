@@ -9,6 +9,7 @@ import { documentStats, initializeTracing, resultStats } from './tracing.mjs';
 import { open, unlink } from 'node:fs/promises';
 import { loadBailianApiKey, transcribeAudioFile } from './asr-service.mjs';
 import { prepareDocument, validateResult } from './document.mjs';
+import { createFaceBroker } from './face-broker.mjs';
 import { loadApiKey, runPiTask } from './runner.mjs';
 
 const terminal = status => ['completed', 'failed', 'cancelled', 'timed_out'].includes(status);
@@ -25,7 +26,7 @@ function clean(value, secrets) {
   }));
 }
 
-export async function createServer({ root = process.cwd(), port = 43127, runner = runPiTask, asrRunner = transcribeAudioFile, apiKey, bailianApiKey, searchApiKey, tracing, timeoutMs = 120_000, asrTimeoutMs = 30 * 60_000, maxAudioBytes = 2 * 1024 ** 3, maxTurns = 12, maxToolCalls = 24 } = {}) {
+export async function createServer({ root = process.cwd(), port = 43127, runner = runPiTask, asrRunner = transcribeAudioFile, apiKey, bailianApiKey, searchApiKey, tracing, timeoutMs = 120_000, asrTimeoutMs = 30 * 60_000, maxAudioBytes = 2 * 1024 ** 3, maxTurns, maxToolCalls = 15 } = {}) {
   const directory = resolve(root, '.private/agent');
   const taskDirectory = join(directory, 'tasks');
   mkdirSync(taskDirectory, { recursive: true, mode: 0o700 });
@@ -47,6 +48,7 @@ export async function createServer({ root = process.cwd(), port = 43127, runner 
   const tasks = new Map();
   const active = new Map();
   const traces = new Map();
+  const faceBrokers = new Map();
   const uploads = new Set();
   const listeners = new Map();
   const events = new Map();
@@ -90,6 +92,8 @@ export async function createServer({ root = process.cwd(), port = 43127, runner 
     const controller = new AbortController();
     const trace = traces.get(task.id);
     active.set(task.id, controller);
+    const broker = task.inspectFaces ? createFaceBroker(data => publish(task.id, 'capture_faces', data), controller.signal) : undefined;
+    if (broker) faceBrokers.set(task.id, broker);
     let timer;
     const startTimer = (ms, message) => {
       clearTimeout(timer);
@@ -119,12 +123,13 @@ export async function createServer({ root = process.cwd(), port = 43127, runner 
       const analysis = trace?.child('analyze-transcript', { input: documentStats(task.document) }, 'agent');
       try {
         const result = await runner({
-          document: structuredClone(task.document), prompt: task.prompt, signal: controller.signal, apiKey, webSearch, trace: analysis, maxTurns, maxToolCalls,
+          document: structuredClone(task.document), prompt: task.prompt, signal: controller.signal, apiKey, webSearch, inspectFaces: broker?.inspect, trace: analysis, maxTurns, maxToolCalls,
           onEvent: event => { if (!terminal(task.status)) publish(task.id, 'pi', event); },
           onMessages: messages => { if (!terminal(task.status)) writeFileSync(pathFor(task.id, '.messages.json'), JSON.stringify(clean(messages, secrets)), { mode: 0o600 }); }
         });
         if (terminal(task.status)) return;
         const validated = validateResult(result, prepareDocument(task.document));
+        if (Object.values(validated.faces || {}).some(id => id !== null && !broker?.candidates.has(id))) throw new Error('无效头像候选');
         analysis?.end('completed', { output: resultStats(validated) });
         finish(task, 'completed', validated);
       } catch (error) {
@@ -135,7 +140,7 @@ export async function createServer({ root = process.cwd(), port = 43127, runner 
       // HTTP / SSE / 磁盘上仅出现固定错误，不泄露 SDK、路径或凭证。
       if (!terminal(task.status)) finish(task, 'failed', null, '分析失败，请检查本地配置或稍后重试');
     }).finally(async () => {
-      clearTimeout(timer); active.delete(task.id);
+      clearTimeout(timer); active.delete(task.id); faceBrokers.delete(task.id);
       if (audioPath) await unlink(audioPath).catch(() => {});
     });
   }
@@ -175,7 +180,7 @@ export async function createServer({ root = process.cwd(), port = 43127, runner 
           if (body.document !== undefined) { if (body.document.audio !== undefined) throw new Error(); prepareDocument(body.document); }
           else if (!body.context || typeof body.context !== 'object' || Array.isArray(body.context) || body.context.audio !== undefined) throw new Error();
         } catch { return json(response, 400, { error: '需要有效 context 或 document、mode(analyze) 和可选字符串 prompt；音频请单独上传' }); }
-        const task = clean({ id: randomUUID(), status: body.document ? 'queued' : 'receiving_audio', ...(body.document ? { document: body.document } : { context: body.context }), mode: body.mode, ...(body.prompt !== undefined ? { prompt: body.prompt } : {}), createdAt: Date.now(), updatedAt: Date.now() }, secrets);
+        const task = clean({ id: randomUUID(), status: body.document ? 'queued' : 'receiving_audio', ...(body.document ? { document: body.document } : { context: body.context }), mode: body.mode, ...(body.inspectFaces === true ? { inspectFaces: true } : {}), ...(body.prompt !== undefined ? { prompt: body.prompt } : {}), createdAt: Date.now(), updatedAt: Date.now() }, secrets);
         tasks.set(task.id, task); events.set(task.id, []); persist(task); publish(task.id, 'status', { status: task.status });
         if (tracing) traces.set(task.id, tracing.start('analyze-video', {
           metadata: { taskId: task.id }, input: task.document
@@ -185,10 +190,26 @@ export async function createServer({ root = process.cwd(), port = 43127, runner 
         if (task.document) launch(task);
         return;
       }
-      const match = url.pathname.match(/^\/tasks\/([\da-f-]{36})(?:\/(events|cancel|audio))?$/);
+      const match = url.pathname.match(/^\/tasks\/([\da-f-]{36})(?:\/(events|cancel|audio|faces))?$/);
       const task = match && tasks.get(match[1]);
       if (!task) return json(response, 404, { error: '任务不存在' });
       if (request.method === 'GET' && !match[2]) return json(response, 200, task);
+      if (request.method === 'POST' && match[2] === 'faces') {
+        const broker = faceBrokers.get(task.id);
+        if (!broker || task.status !== 'analyzing') return json(response, 409, { error: '采帧请求已结束' });
+        const chunks = [];
+        let bytes = 0;
+        for await (const chunk of request) {
+          bytes += chunk.length;
+          if (bytes > 1024 ** 2) return json(response, 413, { error: '采帧结果过大' });
+          chunks.push(chunk);
+        }
+        try {
+          const { requestId, frames } = JSON.parse(Buffer.concat(chunks));
+          const accepted = broker.receive(requestId, frames);
+          return json(response, accepted ? 200 : 409, { accepted });
+        } catch { return json(response, 400, { error: '无效采帧结果' }); }
+      }
       if (request.method === 'POST' && match[2] === 'audio') {
         if (task.status !== 'receiving_audio' || uploads.has(task.id)) return json(response, 409, { error: '任务当前不能接收音频' });
         if (request.headers['content-type']?.split(';')[0].trim().toLowerCase() !== 'audio/mp4') return json(response, 415, { error: '需要 Content-Type audio/mp4' });

@@ -14,7 +14,19 @@ export function createTabBridge(tabs = chrome.tabs) {
     return result.data;
   }
 
-  return async (action, payload = {}) => {
+  return async (action, payload = {}, signal) => {
+    signal?.throwIfAborted();
+    if (action === 'framesAt' && signal) {
+      const captureId = crypto.randomUUID();
+      const cancel = () => send(payload.tabId, 'cancelFramesAt', { captureId }).catch(() => {});
+      signal.addEventListener('abort', cancel, { once: true });
+      try {
+        return await send(payload.tabId, action, { ...payload, captureId });
+      } finally {
+        signal.removeEventListener('abort', cancel);
+        signal.throwIfAborted();
+      }
+    }
     if (action === 'snapshot') {
       const [tab] = await tabs.query({ active: true, currentWindow: true });
       const available = /^https:\/\/www\.bilibili\.com\/video\/BV\w+/.test(tab?.url || '');

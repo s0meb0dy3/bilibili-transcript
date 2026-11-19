@@ -13,7 +13,11 @@
     <h2>启动本地服务</h2>
     <pre>npm run agent:dev</pre>
     <p class="hint">启动后回到 B站视频页，在侧栏点击“开始分析”。服务只监听本机地址，处理结果仍显示在插件侧栏。</p>
-    <p id="status" role="status">当前配置方式：本地 Agent .env</p>
+    <h2>发言人头像</h2>
+    <label><input type="checkbox" id="speaker-avatars"> 分析时尝试提取头像</label>
+    <p class="hint">人脸检测在本地浏览器运行；开启后，少量视频截图会发送给 DeepSeek 用于判断。无法可靠匹配时仍使用默认头像。</p>
+    <p id="status" role="status"></p>
+    <script type="module" src="options.js"></script>
   </main>
 </body>
 </html>
