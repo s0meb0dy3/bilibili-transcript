@@ -6,7 +6,7 @@ import json
 root = Path(__file__).resolve().parents[1]
 source = root / "extension"
 manifest = json.loads((source / "manifest.json").read_text(encoding="utf-8"))
-output = root / "artifacts" / f"bilibili-transcript-{manifest['version']}.zip"
+output = root / "dist" / f"bilibili-transcript-{manifest['version']}.zip"
 output.parent.mkdir(exist_ok=True)
 
 files = [

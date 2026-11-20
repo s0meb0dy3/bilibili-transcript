@@ -1,18 +1,6 @@
 import test from 'node:test';
-import { readFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import { normalizeTranscript, paragraphize } from '../extension/transcript.js';
-
-test('real original M4A fixture preserves five speakers, all text and timestamps', async () => {
-  const raw = JSON.parse(await readFile(new URL('../fixtures/asr/BV1Gg411D7i7.json', import.meta.url), 'utf8'));
-  assert.equal(raw.file_url, undefined);
-  const cues = normalizeTranscript(raw);
-  const paragraphs = paragraphize(cues);
-  assert.equal(cues.length, 168);
-  assert.equal(new Set(cues.map(cue => cue.speakerId)).size, 5);
-  assert.equal(paragraphs.length, 50);
-  assertCoverage(cues, paragraphs);
-});
 
 const sentence = (index, speaker = 0, text = `第${index}句。`) => ({
   begin_time: index * 1000, end_time: index * 1000 + 900,

@@ -5,7 +5,10 @@ bilibili/
 │   ├── asr-service.mjs            # 调用百炼 ASR，取得带时间和说话人编号的转写
 │   ├── runner.mjs                 # 运行 Pi Agent，把完整转写和视频资料交给 DeepSeek
 │   ├── document.mjs               # 校验输入文稿，以及最终的说话人映射和摘要
-│   ├── web-search.mjs             # 可选的 Brave 搜索，用于补充公开身份线索
+│   ├── web-search.mjs             # 可选的 DeepSeek 搜索，用于补充公开身份线索
+│   ├── face-broker.mjs            # 协调浏览器采帧和候选 ID
+│   ├── translate.mjs              # 批量翻译转写
+│   ├── tracing.mjs                # 可选的 Langfuse 追踪
 │   └── README.md                  # 本地服务配置与接口说明
 │
 ├── extension/                     # Chrome / Edge 扩展：负责取素材、操作播放器和展示
@@ -26,7 +29,6 @@ bilibili/
 │   └── vendor/mediapipe/           # MediaPipe WASM、模型及许可证文件
 │
 ├── tests/                         # 自动化测试：Agent、ASR、HTTP、侧栏和播放器通信
-├── fixtures/                      # 脱敏转写样例和音频验证记录
 ├── scripts/                       # 静态检查、浏览器联调和扩展打包
 ├── docs/                          # 产品需求、实验记录和界面参考图
 │
@@ -35,7 +37,7 @@ bilibili/
 ├── package.json / package-lock.json  # npm 命令和依赖锁定
 ├── .env.example / .env            # 配置模板 / 本机密钥；真实 .env 不进 Git
 ├── .private/                     # 本地连接凭据、任务记录和临时上传
-├── artifacts/                    # 扩展安装包、实验音频和截图等产物
+├── dist/                         # 本地生成的扩展安装包，不进 Git
 ├── node_modules/                 # 已安装的 npm 依赖
 └── .git/ 及仓库配置文件           # 版本历史、忽略规则和编辑器约定
 ```

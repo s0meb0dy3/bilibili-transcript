@@ -1,8 +1,11 @@
-// Real player integration with cached ASR fixture; no cloud calls or credentials.
+// Real player integration with synthetic transcript data; no cloud calls or credentials.
 const fs = await import('node:fs/promises');
 const root = __PROJECT_ROOT__;
 const read = name => fs.readFile(root + '/extension/' + name, 'utf8');
-const raw = JSON.parse(await fs.readFile(root + '/fixtures/asr/BV1Gg411D7i7.json', 'utf8'));
+const raw = { transcripts: [{ sentences: Array.from({ length: 30 }, (_, i) => ({
+  begin_time: i * 2000, end_time: (i + 1) * 2000, speaker_id: Math.floor(i / 2) % 2,
+  text: `第 ${i + 1} 句联调文稿，用于检查侧栏的跳转、高亮和阅读位置。`
+})) }] };
 const task = await taskSpace('ASR侧栏联调');
 console.log({ spaceId: task.spaceId });
 const page = task.page('p1');
@@ -83,5 +86,4 @@ console.log(await page.evaluate(() => {
   if (panel.body.scrollTop !== 0) throw new Error('总结页应该从顶部开始');
   return { paragraphs: paragraphs.length, highlights, seekCalls, anchor: state.anchor.cueId };
 }));
-console.log({ screenshot: await page.screenshot({ path: root + '/artifacts/asr-sidebar-preview.png' }) });
 await task.finish({ keep: [] });

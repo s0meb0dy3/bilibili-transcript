@@ -38,7 +38,7 @@ npm run test:browser
 npm run package
 ```
 
-浏览器验证是可选的 Ego 浏览器联调，直接渲染[脱敏 ASR 样例](./fixtures/asr/BV1Gg411D7i7.json)，检查真实播放器跳转和高亮，不调用云服务。打包额外需要 Python 3 标准库，产物位于 `artifacts/`，仅含插件源码及图标。
+浏览器验证是可选的 Ego 浏览器联调，用脚本生成的转写测试数据检查真实播放器跳转和高亮，不调用云服务。打包额外需要 Python 3 标准库，产物位于 `dist/`，仅包含扩展源码和运行资源。
 
 ## 数据边界
 

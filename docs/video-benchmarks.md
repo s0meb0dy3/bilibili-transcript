@@ -38,3 +38,5 @@
 
 19. [乔布斯在斯坦福大学毕业典礼上的演讲（中英字幕）](https://www.bilibili.com/video/BV1oW411h7Ea/)
 20. [【TED】如何用有限的词汇说出最流利的英语？](https://www.bilibili.com/video/BV11J411m7oX/)
+
+易错视频：<https://www.bilibili.com/video/BV1HaRjYtE1q/>
