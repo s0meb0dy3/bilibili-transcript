@@ -4,7 +4,7 @@ async function setupSidebar() {
   chrome.contextMenus.create({ id: 'settings', title: '设置', contexts: ['action'] });
 }
 
-const setup = () => setupSidebar().catch(() => console.error('[B站逐字稿] 侧栏初始化失败，请重新加载扩展'));
+const setup = () => setupSidebar().catch(() => console.error('VideoTrace 侧栏初始化失败，请重新加载扩展'));
 chrome.runtime.onInstalled.addListener(setup);
 chrome.runtime.onStartup.addListener(setup);
 chrome.contextMenus.onClicked.addListener(info => {

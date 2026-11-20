@@ -1,45 +1,28 @@
-# B站视频 AI 助手 0.6.0
+# VideoTrace
 
-Chrome / Edge 原生侧栏插件：下载当前 B站视频的原始 M4A，使用阿里云百炼 ASR 生成带时间和匿名说话人的逐字稿。本地规则按完整 ASR 句子分段，不读取平台字幕、不补标点、不调用大模型分段。
+面向网页视频的多模态理解与问答 Agent。当前支持 B 站和 YouTube 场景：生成带时间戳的逐字稿、说话人头像和视频摘要，并支持基于转写与画面的问答。
 
-## 安装与使用
+## 快速开始
 
-需要 Chrome / Edge 116+ 和 Node.js ≥22.19.0。
-
-1. 执行 `npm ci`，参考 [.env.example](./.env.example) 在根目录 `.env` 配置 `BAILIAN_API_KEY` 和 `DEEPSEEK_API_KEY`。
-2. 执行 `npm run agent:dev`；服务只监听 `127.0.0.1:43127`，插件自动连接，不保存模型密钥。
-3. 在扩展管理页加载已解压的 [extension](./extension/) 目录。更新源码后重新加载扩展，再刷新 B 站视频页。
-4. 打开侧栏，点击“开始分析”。使用顶部“总结 / 转写”页签切换结果。
-
-## 分析流程
-
-没有缓存时，插件把当前视频音频上传至本地服务，由百炼转写和区分匿名说话人；已有转写时直接复用。本地服务把视频标题、简介、UP 主公开信息及完整转写一次性发给 DeepSeek。本地服务注册 `web_search` 工具；模型开启 high 思考后自主决定是否搜索、搜索什么和搜索几次。工具调用 DeepSeek Search API，使用 `DEEPSEEK_API_KEY`（也可单独配置 `DEEPSEEK_SEARCH_API_KEY`），只返回标题、URL和摘要，不发送转写原句或私人资料。
-
-模型通过 `finalize_video_result` 提交简短摘要和 `speakerId → 姓名或角色` 映射。身份是文本推断，不是声纹认证；无法判断时显示未知。不改写逐字稿或时间戳。
-
-在扩展设置中开启「分析时尝试提取头像」后，Agent 可以自主检查当前视频的时间范围：每次最多 20 秒，浏览器每秒取一帧，用本地 MediaPipe 检测人脸，只从检测到脸的帧里均匀选最多 3 张完整截图交给同一个 DeepSeek 模型。无法可靠匹配就显示默认头像。搜索、头像检查和最终提交共用 15 次工具预算，最后一次留给提交；不单独限制头像检查次数或模型轮数，分析阶段仍有超时。截图不会写入任务日志或 Langfuse；扩展只缓存裁好的最终头像。
-
-侧栏重新打开只读取按视频分 P 保存的缓存，不会自动调用云服务。返回视频时恢复「总结 / 转写」页签；总结从顶部打开，转写回到上次阅读的句子，不跳转播放器。转写页点击「显示中文译文」才会分批调用 DeepSeek 翻译；译文缓存在本地，中文在上、原文在下，两者共用点击跳转和播放高亮。处理期间可取消，但已提交的云端请求可能继续运行或产生费用。详见 [本地服务接口](./agent/README.md)。
-
-## Langfuse 观测（可选）
-
-在同一个项目根目录 `.env` 里填写 `LANGFUSE_BASE_URL=http://127.0.0.1:3000` 及 Langfuse 项目的 `LANGFUSE_PUBLIC_KEY`、`LANGFUSE_SECRET_KEY`，再重启本地 Agent。未填齐时不启用追踪；不会默认向云端发送数据。
-
-每个分析任务是一条 `analyze-video` trace，包含音频接收、百炼转写、Pi Agent、每轮 Agent（`turn-1`、`turn-2`）、模型请求和工具调用。现在会记录搜索词、搜索结果的标题/URL/摘要、最终 speaker 映射和摘要，便于复盘；不上传真实逐字稿、音频、模型隐藏推理或密钥。模型输入仍然可以包含完整转写，但追踪只保留句数、说话人数、字符数和上下文消息数量。不新增日志文件，不改变插件界面。现有任务文件仍用于结果读取和 SSE 重放。
-
-## 开发与验证
-
-基础插件无需构建。本地 Agent 实验与完整测试需要 Node.js ≥22.19.0，先执行 `npm ci` 安装锁定的 Pi 依赖。
+需要 Chrome / Edge 116+、Node.js ≥22.19.0 和 Python 3。
 
 ```bash
-npm run check
+npm ci
+cp .env.example .env
+# 在 .env 中填写 BAILIAN_API_KEY 和 DEEPSEEK_API_KEY
+npm run agent:dev
+```
+
+随后在浏览器扩展管理页加载 `extension/`，打开网页视频并点击侧栏中的「开始分析」。
+
+## 开发
+
+```bash
 npm test
-npm run test:browser
+npm run check
 npm run package
 ```
 
-浏览器验证是可选的 Ego 浏览器联调，用脚本生成的转写测试数据检查真实播放器跳转和高亮，不调用云服务。打包额外需要 Python 3 标准库，产物位于 `dist/`，仅包含扩展源码和运行资源。
+本地服务监听 `127.0.0.1:43127`。Langfuse 为可选的链路观测服务；配置 `LANGFUSE_BASE_URL`、`LANGFUSE_PUBLIC_KEY` 和 `LANGFUSE_SECRET_KEY` 后重启 Agent 即可启用。
 
-## 数据边界
-
-仅处理用户有权访问的视频。百炼接收音频，DeepSeek 接收转写与视频资料；开启搜索后，DeepSeek Search API 接收公开身份查询。不要提交或分享真实密钥、私有配置、缓存和音视频。
+完整的本地服务接口和数据边界见 [`agent/README.md`](agent/README.md)。

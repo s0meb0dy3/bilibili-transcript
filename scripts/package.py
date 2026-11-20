@@ -6,7 +6,7 @@ import json
 root = Path(__file__).resolve().parents[1]
 source = root / "extension"
 manifest = json.loads((source / "manifest.json").read_text(encoding="utf-8"))
-output = root / "dist" / f"bilibili-transcript-{manifest['version']}.zip"
+output = root / "dist" / f"videotrace-{manifest['version']}.zip"
 output.parent.mkdir(exist_ok=True)
 
 files = [
@@ -18,10 +18,10 @@ files = [
 
 with ZipFile(output, "w", ZIP_DEFLATED) as archive:
     for file in files:
-        archive.write(file, Path("bilibili-transcript") / file.relative_to(source))
+        archive.write(file, Path("videotrace") / file.relative_to(source))
 
 with ZipFile(output) as archive:
     assert archive.testzip() is None
-    assert "bilibili-transcript/manifest.json" in archive.namelist()
+    assert "videotrace/manifest.json" in archive.namelist()
 
 print(f"Packaged {len(files)} extension files: {output.relative_to(root)}")
