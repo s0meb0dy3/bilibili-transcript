@@ -5,6 +5,7 @@ import { readFile } from 'node:fs/promises';
 import { normalizeTranscript, paragraphize } from '../extension/transcript.js';
 import { activeCueAt } from '../extension/panel.js';
 import { loadPageAudio } from '../extension/audio-loader.js';
+import { initialAvatar } from '../extension/avatar.js';
 
 const source = (await readFile(new URL('../extension/app.js', import.meta.url), 'utf8')).replace(/^import .+;\n/gm, '');
 const flush = () => new Promise(resolve => setImmediate(resolve));
@@ -49,7 +50,7 @@ async function environment({ cached = true } = {}) {
   };
   const scope = {
     createAgentClient: () => ({ translate }),
-    loadPageAudio, createAgentView: options => { agentOptions = options; return { host: {}, analyze: () => agentAnalyze(options), cancel: () => agentCancel(options) }; },
+    loadPageAudio, initialAvatar, createAgentView: options => { agentOptions = options; return { host: {}, analyze: () => agentAnalyze(options), cancel: () => agentCancel(options) }; },
     createTabBridge: () => request, TranscriptPanel: Panel, activeCueAt,
     readStored: async key => { reads.push(key); return storage.get(key); },
     writeStored: async (key, value) => { writes.push({ key, value: structuredClone(value) }); storage.set(key, structuredClone(value)); },

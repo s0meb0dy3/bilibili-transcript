@@ -45,6 +45,16 @@ const target = await page.evaluate(() => {
   if (root.querySelector('.summary').hidden || root.querySelector('.summary').textContent !== '离线测试摘要' || !root.querySelector('.transcript').hidden) throw new Error('总结页签显示异常');
   root.querySelectorAll('.view-tab')[1].click();
   if (!root.querySelector('.summary').hidden || root.querySelector('.transcript').hidden) throw new Error('转写页签切换失败');
+  const { panel } = window.__asrTest;
+  if (panel.translationButton.hidden || panel.followButton.hidden || !panel.analyzeButton.hidden || panel.moreButton.hidden) throw new Error('转写工具栏状态错误');
+  if (!panel.partBadge.hidden) throw new Error('单 P 不应显示分 P 标记');
+  panel.setContext({ title: '联调视频', part: 1, partTitle: '上集', chapters: ['上集', '下集'] });
+  if (panel.partBadge.hidden || panel.partBadge.textContent !== 'P1') throw new Error('多 P 标记错误');
+  panel.moreButton.click();
+  if (!panel.moreMenu.matches(':popover-open') || !panel.menuTitle.textContent.includes('联调视频')) throw new Error('更多菜单没有显示标题');
+  panel.setTaskState({ busy: true });
+  if (panel.moreMenu.matches(':popover-open') || panel.analyzeButton.hidden || panel.analyzeButton.textContent !== '取消') throw new Error('分析中的取消入口错误');
+  panel.setTaskState();
   const sentence = root.querySelectorAll('.sentence')[1];
   return { cueId: sentence.querySelector('.cue').dataset.cueId, text: sentence.textContent };
 });

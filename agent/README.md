@@ -29,7 +29,7 @@
 
 首轮将视频标题、简介、UP 主公开信息与完整逐句转写交给 DeepSeek，不再提供转写查询工具。本地服务默认用 `DEEPSEEK_API_KEY` 调用 DeepSeek Search API，也可用 `DEEPSEEK_SEARCH_API_KEY` 单独配置；启用 `web_search` 后模型自主决定查询次数，每次最多返回五条结果。仅在资料不足时请模型用公开视频标题、节目名或候选姓名查询；查询会发给 DeepSeek Search API，不应包含转写原句或私人资料。未配置时仍可分析。最终调用 `finalize_video_result`：校验失败可修正，成功后立即结束。不提供问答工具。
 
-开启头像后，创建任务时传 `inspectFaces: true`，允许 Agent 自选时间范围调用 `inspect_faces`。扩展收到 `capture_faces` SSE 事件后在当前视频采帧，并通过 `POST /tasks/:id/faces` 回传 `{requestId,frames}`。单次最多 20 秒，每秒在浏览器本地检测一次，均匀取最多 3 张截图，仅附在下一次 DeepSeek 请求里。截图不进入 Pi 消息、任务日志或 Langfuse。最终结果可带 `faces`（speakerId 对应已展示的候选 ID 或 null），扩展据此裁剪并缓存最终头像。
+开启头像后，创建任务时传 `inspectFaces: true`，允许 Agent 自选时间范围调用 `inspect_faces`。扩展收到 `capture_faces` SSE 事件后在当前视频采帧，并通过 `POST /tasks/:id/faces` 回传 `{requestId,frames}`。单次最多 20 秒，每秒在浏览器本地检测一次，只从检测到脸的帧里均匀取最多 3 张完整截图，仅附在下一次 DeepSeek 请求里。截图不进入 Pi 消息、任务日志或 Langfuse。最终结果可带 `faces`（speakerId 对应已展示的候选 ID 或 null），扩展据此裁剪并缓存最终头像。
 
 硬限制：ASR 最长30分钟，随后 Pi 分析独立计时120秒。搜索、头像和提交共用 15 次工具预算，最后一次保留给提交；不设模型轮数或独立头像次数上限。取消和超时立即冻结任务状态，不接受晚到结果或后续事件。失败无 result，HTTP/SSE/磁盘错误信息不保存完整 provider error。服务退出后未完成任务在下次启动标记失败，不自动重放收费请求。
 

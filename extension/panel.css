@@ -28,20 +28,17 @@ button:focus-visible, .body:focus-visible, .sentence:focus-visible {
   background: #fff;
 }
 .panel > :not(.body) { flex-shrink: 0; }
-.video-title {
-  margin: 0;
-  padding: 18px 20px 0;
-  color: #606976;
-  font-size: 13px;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.view-tabs { display: flex; gap: 4px; padding: 8px 20px 0; border-bottom: 1px solid #f0f1f3; }
-.view-tab { border: 0; border-bottom: 2px solid transparent; background: transparent; padding: 6px 4px; color: #9298a2; font-size: 13px; }
-.view-tabs .tool-button { margin-inline-start: auto; margin-bottom: 4px; }
+.view-tabs { display: flex; align-items: center; gap: 3px; padding: 0 12px; height: 36px; border-bottom: 1px solid #f0f1f3; }
+.view-tab { align-self: stretch; border: 0; border-bottom: 2px solid transparent; background: transparent; padding: 0 5px; color: #626d7e; font-size: 13px; white-space: nowrap; }
 .view-tab.active { border-bottom-color: #315ba5; color: #315ba5; }
+.toolbar-actions { display: flex; align-items: center; gap: 3px; margin-inline-start: auto; }
+.toolbar-actions .tool-button { min-height: 28px; padding: 0 6px; white-space: nowrap; }
+.toolbar-actions .more-button { min-width: 28px; font-size: 16px; }
+.tool-button[aria-pressed="true"] { background: #e8effc; color: #294f91; }
+.part-badge { color: #626d7e; font-size: 11px; white-space: nowrap; }
+.more-menu { inset: 36px 12px auto auto; margin: 0; padding: 10px; width: min(240px, calc(100% - 24px)); border: 1px solid #e5e9f0; border-radius: 8px; background: white; color: inherit; box-shadow: 0 4px 16px #1823381a; }
+.menu-title { margin: 0 0 8px; color: #626d7e; font-size: 12px; overflow-wrap: anywhere; }
+.menu-title:empty { display: none; }
 .summary { font-size: 15px; line-height: 1.8; white-space: pre-wrap; }
 .summary p { margin: 0 0 12px; }
 .tool-button {
@@ -73,7 +70,7 @@ button:focus-visible, .body:focus-visible, .sentence:focus-visible {
   overflow-x: hidden;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
-  padding: 20px 20px 8px;
+  padding: 12px 20px 8px;
 }
 .paragraph { margin: 0 0 24px; }
 .paragraph-meta { display: flex; align-items: center; gap: 7px; margin-bottom: 8px; color: #969ca6; font-size: 11px; }
@@ -93,7 +90,6 @@ button:focus-visible, .body:focus-visible, .sentence:focus-visible {
 .avatar::after { content: ""; position: absolute; width: 64%; height: 48%; left: 18%; top: 58%; border-radius: 50% 50% 0 0; background: #c2c7cf; }
 .timestamp { border: 0; padding: 0; background: transparent; color: #9299a5; font-size: 11px; font-variant-numeric: tabular-nums; }
 .timestamp:hover { color: #315ba5; }
-.translation-bar { display: flex; justify-content: flex-end; padding: 8px 20px 0; }
 .paragraph-text { margin: 0; font-size: 15px; line-height: 1.95; overflow-wrap: anywhere; white-space: pre-wrap; }
 .translation + .bilingual-original { margin-top: 4px; color: #606976; font-size: 13px; }
 .sentence { cursor: pointer; border-radius: 3px; user-select: text; }
@@ -101,13 +97,8 @@ button:focus-visible, .body:focus-visible, .sentence:focus-visible {
 .cue { border-radius: 2px; }
 .active-cue { background: #e8effc; color: #294f91; }
 .active-paragraph .person-name, .active-paragraph .timestamp { color: #7486a3; }
-.footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 12px 20px; border-top: 1px solid #f0f1f3; background: #fff; }
-.follow-button { border: 1px solid #e5e9f0; border-radius: 16px; background: #fff; padding: 5px 11px; color: #65758e; font-size: 12px; }
-.follow-button[aria-pressed="true"] { border-color: #e4ebf8; background: #f4f7fd; color: #5474ab; }
-
 @media (max-width: 300px) {
-  .video-title { padding: 14px 14px 0; }
-  .view-tabs, .footer { padding-right: 14px; padding-left: 14px; }
+  .view-tabs { padding-inline: 8px; }
   .task-status, .status { margin-right: 14px; margin-left: 14px; }
   .body { padding-right: 14px; padding-left: 14px; }
 }

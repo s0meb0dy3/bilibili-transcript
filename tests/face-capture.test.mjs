@@ -29,6 +29,27 @@ test('detects every available frame and selects three uniformly by sorted actual
   assert.deepEqual(frames[0].faces, [{ box: [0, .25, .5, .75], score: .75 }]);
 });
 
+test('selects screenshots only from frames with faces while preserving all detections', async () => {
+  const samples = Array.from({ length: 20 }, (_, i) => (i + 2) * 1000);
+  for (const [faceTimes, expected] of [
+    [[4000, 5000, 6000, 8000, 9000], [4000, 6000, 9000]],
+    [[4000, 9000], [4000, 9000]],
+    [[], []]
+  ]) {
+    const capture = createFaceCapture({
+      captureFrames: async times => times.map(timeMs => ({ timeMs, dataUrl: jpeg(timeMs) })),
+      decode: async url => ({ width: 100, height: 100, timeMs: Number(url.split('/').at(-1)) }),
+      getDetector: async () => ({ detect: ({ timeMs }) => ({
+        detections: faceTimes.includes(timeMs) ? [detection(10, 10, 20, 20, .75)] : []
+      }) })
+    });
+    const { frames } = await capture(samples);
+    assert.deepEqual(frames.map(frame => frame.timeMs), samples);
+    assert.deepEqual(frames.filter(frame => frame.faces.length).map(frame => frame.timeMs), faceTimes);
+    assert.deepEqual(frames.filter(frame => frame.image).map(frame => frame.timeMs), expected);
+  }
+});
+
 test('batches frame requests without dropping samples past the bridge limit', async () => {
   const samples = Array.from({ length: 42 }, (_, i) => i * 1000);
   const batches = [];

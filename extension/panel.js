@@ -52,17 +52,35 @@ export class TranscriptPanel {
 
     this.aside = element('main', 'panel');
     this.aside.setAttribute('aria-label', '视频逐字稿');
-    this.title = element('h1', 'video-title', '逐字稿');
     this.nav = element('nav', 'view-tabs');
+    this.nav.setAttribute('aria-label', '侧栏工具栏');
     this.summaryTab = element('button', 'view-tab', '总结');
     this.transcriptTab = element('button', 'view-tab active', '转写');
     this.summaryTab.onclick = () => this.setView('summary');
     this.transcriptTab.onclick = () => this.setView('transcript');
-    this.nav.append(this.summaryTab, this.transcriptTab);
+    this.partBadge = element('span', 'part-badge');
+    this.partBadge.hidden = true;
+    this.nav.append(this.summaryTab, this.transcriptTab, this.partBadge);
+    const actions = element('div', 'toolbar-actions');
+    this.nav.append(actions);
     this.analyzeButton = element('button', 'tool-button', '开始分析');
     this.analyzeButton.title = '分析会调用云服务，可能产生费用';
     this.analyzeButton.onclick = () => this.busy ? handlers.cancelTask() : handlers.analyze();
-    this.nav.append(this.analyzeButton);
+    this.moreButton = element('button', 'tool-button more-button', '⋯');
+    this.moreButton.setAttribute('aria-label', '更多操作');
+    this.moreButton.title = '更多操作';
+    this.moreButton.setAttribute('popovertarget', 'transcript-more');
+    this.moreMenu = element('div', 'more-menu');
+    this.moreMenu.id = 'transcript-more';
+    this.moreMenu.setAttribute('popover', 'auto');
+    this.menuTitle = element('p', 'menu-title');
+    this.reanalyzeButton = element('button', 'tool-button', '重新分析');
+    this.reanalyzeButton.title = this.analyzeButton.title;
+    this.reanalyzeButton.onclick = () => {
+      this.closeMore();
+      handlers.analyze();
+    };
+    this.moreMenu.append(this.menuTitle, this.reanalyzeButton);
     this.taskStatus = element('div', 'task-status');
     this.taskStatus.setAttribute('role', 'status');
     this.taskStatus.hidden = true;
@@ -74,10 +92,9 @@ export class TranscriptPanel {
     this.retry.onclick = () => handlers.refresh();
     this.retry.hidden = true;
     this.status.append(this.statusText, this.retry);
-    this.translationBar = element('div', 'translation-bar');
-    this.translationButton = element('button', 'tool-button', '显示中文译文');
+    this.translationButton = element('button', 'tool-button', '中/英');
+    this.setTranslationStatus(false);
     this.translationButton.onclick = () => handlers.translate();
-    this.translationBar.append(this.translationButton);
     this.hasTranscript = false;
     this.body = element('div', 'body');
     this.body.tabIndex = 0;
@@ -102,15 +119,14 @@ export class TranscriptPanel {
     this.body.addEventListener('keydown', event => {
       if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(event.key)) this.setFollow(false);
     });
-    const footer = this.footer = element('footer', 'footer');
-    this.followButton = element('button', 'follow-button', '跟随播放中');
-    this.followButton.setAttribute('aria-pressed', 'true');
+    this.followButton = element('button', 'tool-button follow-button', '跟随播放');
+    this.setFollow(true, false);
     this.followButton.onclick = () => {
       this.setFollow(this.manualReading || !this.follow);
       if (this.follow) this.scrollToActive();
     };
-    footer.append(this.followButton);
-    this.aside.append(this.title, this.nav, this.taskStatus, this.status, this.translationBar, this.body, footer);
+    actions.append(this.translationButton, this.followButton, this.analyzeButton, this.moreButton);
+    this.aside.append(this.nav, this.taskStatus, this.status, this.body, this.moreMenu);
     root.append(this.aside);
     document.body.append(this.host);
     this.setView('transcript', { persist: false });
@@ -120,16 +136,29 @@ export class TranscriptPanel {
 
   setAvailable(available) {
     this.available = available;
-    this.analyzeButton.disabled = !available;
-    if (!available) {
-      this.title.textContent = '逐字稿';
-      this.title.removeAttribute('title');
-    }
+    this.updateToolbar();
   }
 
   setContext(context) {
-    this.title.textContent = `P${context.part} · ${context.partTitle || context.title}`;
-    this.title.title = context.title;
+    const part = `P${context.part}`;
+    this.partBadge.textContent = part;
+    this.partBadge.hidden = !(context.part > 1 || context.chapters?.length > 1);
+    this.partBadge.title = context.partTitle || part;
+    this.menuTitle.textContent = [context.title, !this.partBadge.hidden && `${part} · ${context.partTitle || ''}`].filter(Boolean).join(' — ');
+  }
+
+  closeMore() {
+    if (this.moreMenu.matches(':popover-open')) this.moreMenu.hidePopover();
+  }
+
+  updateToolbar() {
+    const transcriptTools = this.available && this.hasTranscript && this.view === 'transcript';
+    this.translationButton.hidden = !transcriptTools;
+    this.followButton.hidden = !transcriptTools;
+    const hasResult = this.hasTranscript || this.hasSummary;
+    this.analyzeButton.hidden = !this.available || (hasResult && !this.busy);
+    this.moreButton.hidden = !this.available || !hasResult || this.busy;
+    if (this.moreButton.hidden) this.closeMore();
   }
 
   setStatus(message = '', { error = false, retry = false } = {}) {
@@ -141,7 +170,7 @@ export class TranscriptPanel {
 
   setBusy(busy) {
     this.busy = busy;
-    this.analyzeButton.disabled = !this.available;
+    this.updateToolbar();
     this.analyzeButton.textContent = busy ? '取消' : '开始分析';
   }
 
@@ -153,8 +182,11 @@ export class TranscriptPanel {
   }
 
   clear() {
-    this.setTaskState();
+    this.closeMore();
+    this.partBadge.hidden = true;
+    this.menuTitle.textContent = '';
     this.transcript.replaceChildren();
+    this.hasSummary = false;
     this.hasTranscript = false;
     this.bilingual = false;
     this.readingAnchor = null;
@@ -165,6 +197,7 @@ export class TranscriptPanel {
     this.activeParagraph = null;
     this.cueNodes = new Map();
     this.paragraphNodes = new Map();
+    this.setTaskState();
     this.setView('transcript', { persist: false });
   }
 
@@ -223,6 +256,7 @@ export class TranscriptPanel {
       this.paragraphNodes.set(paragraph.id, article);
     }
     this.transcript.replaceChildren(fragment);
+    this.updateToolbar();
     this.body.scrollTop = 0;
   }
 
@@ -258,7 +292,8 @@ export class TranscriptPanel {
 
   setTranslationStatus(pending, message) {
     this.translationButton.disabled = pending;
-    this.translationButton.textContent = message || (pending ? '正在翻译…' : this.bilingual ? '隐藏中文译文' : '显示中文译文');
+    this.translationButton.title = message || (pending ? '正在翻译…' : '显示或隐藏中文译文');
+    this.translationButton.setAttribute('aria-busy', String(pending));
     this.translationButton.setAttribute('aria-pressed', String(Boolean(this.bilingual)));
   }
 
@@ -269,8 +304,7 @@ export class TranscriptPanel {
     this.view = view;
     this.summary.hidden = !summary;
     this.transcript.hidden = summary;
-    this.translationBar.hidden = summary || !this.hasTranscript;
-    this.footer.hidden = summary;
+    this.updateToolbar();
     this.body.scrollTop = 0;
     if (persist && !summary) this.scrollToAnchor(this.readingAnchor);
     this.summaryTab.classList.toggle('active', summary);
@@ -320,14 +354,18 @@ export class TranscriptPanel {
     const text = typeof summary === 'string' ? summary : summary?.overview;
     if (text) this.summary.append(element('p', '', text));
     if (summary?.keyPoints) for (const point of summary.keyPoints) this.summary.append(element('p', '', `• ${point.text || point}`));
+    this.hasSummary = this.summary.childElementCount > 0;
+    this.updateToolbar();
   }
 
   setFollow(follow, persist = true) {
     const changed = this.follow !== follow;
     if (persist) this.manualReading = false;
     this.follow = follow;
-    this.followButton.textContent = follow && !this.manualReading ? '跟随播放中' : '恢复跟随';
-    this.followButton.setAttribute('aria-pressed', String(follow && !this.manualReading));
+    const active = follow && !this.manualReading;
+    const label = active ? '播放时自动滚动到当前句子，点击暂停' : '已暂停自动滚动，点击恢复跟随播放';
+    this.followButton.title = label;
+    this.followButton.setAttribute('aria-pressed', String(active));
     if (persist && changed) this.handlers.follow(follow);
   }
 

@@ -12,6 +12,7 @@ export function createAgentView({ getDocument, loadAudio, captureFaces, cropFace
     const candidates = new Map();
     const seen = new Set();
     let capturing;
+    const pendingCaptures = new Set();
     async function capture({ requestId, times, deadline }) {
       const remaining = deadline - Date.now();
       if (!inspectFaces || !captureFaces || seen.has(requestId) || remaining <= 0) return;
@@ -43,7 +44,7 @@ export function createAgentView({ getDocument, loadAudio, captureFaces, cropFace
       }
       await client.watch(taskId, event => {
         if (signal.aborted) return;
-        if (event.type === 'capture_faces') { void capture(event.data).catch(() => {}); return; }
+        if (event.type === 'capture_faces') { return capture(event.data); }
         if (event.type !== 'status') return;
         if (event.data.status === 'transcribing') onProgress('正在转写…');
         if (event.data.status === 'analyzing') onProgress('正在分析…');

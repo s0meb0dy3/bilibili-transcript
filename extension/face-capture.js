@@ -62,12 +62,14 @@ export function createFaceCapture({ captureFrames, getDetector = loadDetector, d
       }
     }
     const ordered = [...captured.values()].sort((a, b) => a.timeMs - b.timeMs);
-    const selected = new Set(ordered.length <= 3
-      ? ordered.map((_, index) => index)
-      : [0, Math.round((ordered.length - 1) / 2), ordered.length - 1]);
+    const withFaces = ordered.filter(frame => frame.faces.length);
+    const selected = new Set(withFaces.length <= 3
+      ? withFaces
+      : [withFaces[0], withFaces[Math.round((withFaces.length - 1) / 2)], withFaces.at(-1)]);
     return {
-      frames: ordered.map(({ timeMs, faces, dataUrl }, index) => ({
-        timeMs, faces, ...(selected.has(index) ? { image: dataUrl.slice(JPEG_PREFIX.length) } : {})
+      frames: ordered.map(frame => ({
+        timeMs: frame.timeMs, faces: frame.faces,
+        ...(selected.has(frame) ? { image: frame.dataUrl.slice(JPEG_PREFIX.length) } : {})
       }))
     };
   };

@@ -3,6 +3,7 @@ import { createTabBridge } from './tabs.js';
 import { TranscriptPanel, activeCueAt } from './panel.js';
 import { loadPageAudio } from './audio-loader.js';
 import { createFaceCapture, cropFaceImage } from './face-capture.js';
+import { initialAvatar } from './avatar.js';
 import { createAgentClient } from './agent-client.js';
 import { createAgentView } from './agent-view.js';
 
@@ -55,9 +56,33 @@ function clear() {
   panel.clear();
 }
 
+function avatarLabel(speakerId, index) {
+  const number = Number(speakerId);
+  return Number.isInteger(number) && number >= 0 ? String(number + 1) : String.fromCharCode(65 + (index % 26));
+}
+
+function displayAvatars(data) {
+  const avatars = { ...(data.avatars || {}) };
+  const people = data.people || {};
+  const shared = new Map();
+  for (const [id, person] of Object.entries(people)) {
+    const name = String(person?.name || '').trim();
+    if (!name || /^(未知发言人|unknown|未知)$/i.test(name)) continue;
+    if (avatars[id]) shared.set(name, avatars[id]);
+  }
+  const entries = Object.entries(people);
+  entries.forEach(([id, person], index) => {
+    if (avatars[id]) return;
+    const name = String(person?.name || '').trim();
+    if (name && shared.has(name)) avatars[id] = shared.get(name);
+    else avatars[id] = initialAvatar(avatarLabel(id, index), `speaker-${id}`);
+  });
+  return avatars;
+}
+
 function present(data, state = { view: data.agentResult?.summary ? 'summary' : 'transcript' }) {
-  documentData = data;
-  panel.renderDocument(data, { translations, bilingual: state.bilingual });
+  documentData = { ...data, avatars: displayAvatars(data) };
+  panel.renderDocument(documentData, { translations, bilingual: state.bilingual });
   panel.setSummary(data.agentResult?.summary);
   panel.setTranslationStatus(Boolean(translationJob));
   panel.setStatus(data.cues.length ? '' : '模型未识别到有效语音，可重新转写', { retry: !data.cues.length });
