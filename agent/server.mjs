@@ -11,6 +11,7 @@ import { loadBailianApiKey, transcribeAudioFile } from './asr-service.mjs';
 import { prepareDocument, validateResult } from './document.mjs';
 import { createFaceBroker } from './face-broker.mjs';
 import { loadApiKey, runPiTask } from './runner.mjs';
+import { translationBatches, translateBatches } from './translate.mjs';
 
 const terminal = status => ['completed', 'failed', 'cancelled', 'timed_out'].includes(status);
 const json = (response, status, value) => { response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); response.end(JSON.stringify(value)); };
@@ -26,7 +27,7 @@ function clean(value, secrets) {
   }));
 }
 
-export async function createServer({ root = process.cwd(), port = 43127, runner = runPiTask, asrRunner = transcribeAudioFile, apiKey, bailianApiKey, searchApiKey, tracing, timeoutMs = 120_000, asrTimeoutMs = 30 * 60_000, maxAudioBytes = 2 * 1024 ** 3, maxTurns, maxToolCalls = 15 } = {}) {
+export async function createServer({ root = process.cwd(), port = 43127, runner = runPiTask, asrRunner = transcribeAudioFile, apiKey, bailianApiKey, searchApiKey, tracing, timeoutMs = 120_000, asrTimeoutMs = 30 * 60_000, maxAudioBytes = 2 * 1024 ** 3, maxTurns, maxToolCalls = 15, translationFetch = fetch, translationTimeoutMs = 120_000 } = {}) {
   const directory = resolve(root, '.private/agent');
   const taskDirectory = join(directory, 'tasks');
   mkdirSync(taskDirectory, { recursive: true, mode: 0o700 });
@@ -170,6 +171,37 @@ export async function createServer({ root = process.cwd(), port = 43127, runner 
       const authorization = request.headers.authorization || '';
       const expected = `Bearer ${token}`;
       if (Buffer.byteLength(authorization) !== Buffer.byteLength(expected) || !timingSafeEqual(Buffer.from(authorization), Buffer.from(expected))) return json(response, 401, { error: '未授权' });
+      if (request.method === 'POST' && url.pathname === '/translate') {
+        const maxBytes = 1024 ** 2;
+        if (Number(request.headers['content-length']) > maxBytes) return json(response, 413, { error: '翻译请求过大' });
+        const chunks = [];
+        let size = 0;
+        for await (const chunk of request.iterator({ destroyOnReturn: false })) {
+          size += chunk.length;
+          if (size > maxBytes) {
+            request.resume();
+            return json(response, 413, { error: '翻译请求过大' });
+          }
+          chunks.push(chunk);
+        }
+        let batches;
+        try { batches = translationBatches(JSON.parse(Buffer.concat(chunks)).cues); }
+        catch { return json(response, 400, { error: '需要非空且 ID 唯一的翻译条目' }); }
+        const controller = new AbortController();
+        response.once('close', () => controller.abort());
+        if (response.destroyed) return;
+        const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(translationTimeoutMs)]);
+        try {
+          const result = await translateBatches(batches, { apiKey, signal, fetchImpl: translationFetch });
+          if (!response.destroyed) json(response, 200, result);
+        } catch (error) {
+          if (!response.destroyed) {
+            const timedOut = error.name === 'TimeoutError' || signal.reason?.name === 'TimeoutError';
+            json(response, timedOut ? 504 : 502, { error: timedOut ? '翻译超时，请重试' : '翻译失败，请稍后重试' });
+          }
+        }
+        return;
+      }
       if (request.method === 'POST' && url.pathname === '/tasks') {
         let raw = '';
         for await (const chunk of request) { raw += chunk; if (Buffer.byteLength(raw) > 16 * 1024 * 1024) return json(response, 413, { error: '请求过大' }); }

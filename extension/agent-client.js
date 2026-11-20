@@ -24,6 +24,7 @@ export function createAgentClient({ token, fetchImpl = fetch } = {}) {
     return response;
   }
   return {
+    translate: async (cues, signal) => (await request('/translate', { method: 'POST', body: { cues }, signal })).json(),
     start: async (document, { prompt, mode = 'analyze', signal, inspectFaces } = {}) =>
       (await request('/tasks', { method: 'POST', body: { document, prompt, mode, inspectFaces }, signal })).json(),
     startContext: async (context, { prompt, mode = 'analyze', signal, inspectFaces } = {}) =>

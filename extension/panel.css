@@ -93,7 +93,9 @@ button:focus-visible, .body:focus-visible, .sentence:focus-visible {
 .avatar::after { content: ""; position: absolute; width: 64%; height: 48%; left: 18%; top: 58%; border-radius: 50% 50% 0 0; background: #c2c7cf; }
 .timestamp { border: 0; padding: 0; background: transparent; color: #9299a5; font-size: 11px; font-variant-numeric: tabular-nums; }
 .timestamp:hover { color: #315ba5; }
+.translation-bar { display: flex; justify-content: flex-end; padding: 8px 20px 0; }
 .paragraph-text { margin: 0; font-size: 15px; line-height: 1.95; overflow-wrap: anywhere; white-space: pre-wrap; }
+.translation + .bilingual-original { margin-top: 4px; color: #606976; font-size: 13px; }
 .sentence { cursor: pointer; border-radius: 3px; user-select: text; }
 .sentence:hover { background: #f0f4fb; }
 .cue { border-radius: 2px; }

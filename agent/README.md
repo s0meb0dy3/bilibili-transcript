@@ -21,6 +21,7 @@
 - `GET /tasks/:id`：任务 `{id,status,context?,document?,mode,prompt?,createdAt,updatedAt,result?,error?}`。status：receiving_audio、queued（离线 document）、transcribing、analyzing、completed、failed、cancelled、timed_out。ASR 完成后 task.document 包含 context、原始 raw、normalized cues、paragraphs；原文保留，凭证值及敏感字段会脱敏。只有 completed 时有 result。
 - `GET /tasks/:id/events`：用 **fetch + Authorization header** 读取 SSE，不能使用不支持 header 的普通 EventSource。帧包含 `id`、`event` 和 JSON `data`；data 是 `{id,type,data,createdAt}`。type=status 或 pi（内部 data.type 是 Pi 事件类型）。`Last-Event-ID` header 或 `?after=N` 重放 N 后的事件，事件序号单任务单调递增。终态输出后关闭流，运行中有心跳。
 - `POST /tasks/:id/cancel`：返回 `{id,status}`。重复取消终态任务无副作用；取消不会把已完成任务改写为失败。
+- `POST /translate`：按需接收 `{cues:[{id,text}]}`，返回 `{translations:{[id]:译文}}`。服务分批调用 DeepSeek，不进入 Agent 工具循环，也不写入任务日志；客户端断开时取消请求。
 
 结果示例：`{"speakers":{"0":"主持人","1":"未知发言人"},"summary":"两位发言人讨论了……"}`。本地服务校验说话人编号无遗漏、无新增，标签与摘要非空。标签是推断，不是身份认证。结果不重传正文或时间戳。
 

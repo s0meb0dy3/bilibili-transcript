@@ -3,6 +3,7 @@ import { createTabBridge } from './tabs.js';
 import { TranscriptPanel, activeCueAt } from './panel.js';
 import { loadPageAudio } from './audio-loader.js';
 import { createFaceCapture, cropFaceImage } from './face-capture.js';
+import { createAgentClient } from './agent-client.js';
 import { createAgentView } from './agent-view.js';
 
 const request = createTabBridge();
@@ -16,8 +17,24 @@ let syncAgain = false;
 let checkingPlayback = false;
 let windowId;
 let tabId;
+let readingTimer;
+let savedReading;
+let translations;
+let translationJob;
 const resultKey = ctx => `asr-document:v1:${ctx.key}`;
 const avatarKey = ctx => `asr-avatars:v1:${ctx.key}`;
+const panelStateKey = ctx => `asr-panel-state:v1:${ctx.key}`;
+const translationKey = ctx => `asr-translation:zh-CN:v1:${ctx.key}`;
+
+function saveReading() {
+  clearTimeout(readingTimer);
+  if (!documentData) return;
+  const state = panel.getState();
+  const serialized = JSON.stringify(state);
+  if (serialized === savedReading) return;
+  savedReading = serialized;
+  void writeStored(panelStateKey(documentData.context), state).catch(() => {});
+}
 
 function cancel(message = '') {
   task?.abort();
@@ -26,6 +43,11 @@ function cancel(message = '') {
 }
 
 function clear() {
+  saveReading();
+  translationJob?.abort();
+  translationJob = undefined;
+  translations = undefined;
+  savedReading = undefined;
   agentView.cancel();
   cancel();
   revision++;
@@ -33,11 +55,13 @@ function clear() {
   panel.clear();
 }
 
-function present(data) {
+function present(data, state = { view: data.agentResult?.summary ? 'summary' : 'transcript' }) {
   documentData = data;
-  panel.renderDocument(data);
-  if (data.agentResult?.summary) panel.setSummary(data.agentResult.summary);
+  panel.renderDocument(data, { translations, bilingual: state.bilingual });
+  panel.setSummary(data.agentResult?.summary);
+  panel.setTranslationStatus(Boolean(translationJob));
   panel.setStatus(data.cues.length ? '' : '模型未识别到有效语音，可重新转写', { retry: !data.cues.length });
+  panel.restoreState(state);
   updatePlayback();
 }
 
@@ -51,9 +75,13 @@ async function load() {
     const cached = await readStored(resultKey(target));
     if (token !== revision || task || documentData !== original) return;
     if (cached) {
-      const avatars = await readStored(avatarKey(target));
+      const [avatars, state, translated] = await Promise.all([
+        readStored(avatarKey(target)), readStored(panelStateKey(target)), readStored(translationKey(target))
+      ]);
       if (token !== revision || task || documentData !== original) return;
-      present({ ...cached, context: target, avatars: avatars || {} });
+      translations = translated?.savedAt === cached.savedAt ? translated?.translations : undefined;
+      savedReading = JSON.stringify(state);
+      present({ ...cached, context: target, avatars: avatars || {} }, state && { ...state, manualReading: true });
     }
     else panel.setStatus('');
   } catch {
@@ -94,7 +122,36 @@ const panel = new TranscriptPanel(chrome.runtime.getURL('panel.css'), {
       updatePlayback();
     } catch (error) { if (token === revision) panel.setStatus(error.message, { error: true }); }
   },
-  follow: follow => writeStored('settings', { follow }).catch(() => {})
+  follow: follow => writeStored('settings', { follow }).catch(() => {}),
+  state: saveReading,
+  scroll: () => { clearTimeout(readingTimer); readingTimer = setTimeout(saveReading, 250); },
+  translate: async () => {
+    if (!documentData?.cues.length || translationJob) return;
+    if (translations) {
+      present(documentData, { ...panel.getState(), bilingual: !panel.bilingual });
+      saveReading();
+      return;
+    }
+    const target = documentData;
+    const job = translationJob = new AbortController();
+    panel.setTranslationStatus(true);
+    try {
+      const cues = target.cues.filter(({ text }) => text.trim()).map(({ id, text }) => ({ id, text }));
+      const output = await createAgentClient().translate(cues, job.signal);
+      if (job.signal.aborted || documentData !== target) return;
+      translationJob = undefined;
+      translations = output.translations;
+      void writeStored(translationKey(target.context), { savedAt: target.savedAt, translations }).catch(() => {});
+      present(target, { ...panel.getState(), bilingual: true });
+      saveReading();
+    } catch {
+      if (!job.signal.aborted && documentData === target) panel.setTranslationStatus(false, '翻译失败，点击重试');
+      return;
+    } finally {
+      if (translationJob === job) translationJob = undefined;
+    }
+    panel.setTranslationStatus(false);
+  }
 });
 const agentView = createAgentView({
   getDocument: () => documentData ? { ...documentData, context } : { context },
@@ -106,10 +163,19 @@ const agentView = createAgentView({
   onProgress: message => panel.setTaskState({ busy: true, message }),
   onResult: async (result, original, signal, avatars = {}) => {
     const people = Object.fromEntries(Object.entries(result.speakers).map(([id, name]) => [id, { id, name, inferred: true }]));
-    const updated = { ...original, people, agentResult: result, avatars };
+    const updated = { ...original, savedAt: original.savedAt ?? Date.now(), people, agentResult: result, avatars };
+    if (translations && original.savedAt === undefined) {
+      await writeStored(translationKey(original.context), { savedAt: updated.savedAt, translations }).catch(() => {});
+    }
     await writeStored(resultKey(original.context), updated);
     await writeStored(avatarKey(original.context), avatars);
-    if (task && !signal?.aborted) present(updated);
+    if (task && !signal?.aborted) {
+      const state = documentData ? panel.getState() : undefined;
+      if (!documentData) translations = undefined;
+      translationJob?.abort();
+      translationJob = undefined;
+      present(updated, state);
+    }
   }
 });
 readStored('settings').then(settings => { if (settings) panel.setFollow(settings.follow, false); }).catch(() => {});

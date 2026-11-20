@@ -36,7 +36,8 @@ panel.renderDocument({cues,paragraphs,source:'百炼 ASR（离线样例）',save
 const video=document.querySelector('video');
 video.addEventListener('timeupdate',()=>panel.setActive(activeCueAt(cues,video.currentTime*1000)));
 panel.setSummary('离线测试摘要');
- window.__asrTest={get seekCalls(){return seekCalls},paragraphs:paragraphs.length};
+ panel.setView('summary');
+ window.__asrTest={get seekCalls(){return seekCalls},panel,cues,paragraphs};
 })();`);
 await page.waitForFunction(() => document.querySelector('#bili-transcript-root')?.shadowRoot?.querySelectorAll('.paragraph').length > 0, undefined, { timeout: 5000 });
 const target = await page.evaluate(() => {
@@ -54,7 +55,23 @@ await page.waitForFunction(() => !!document.querySelector('#bili-transcript-root
 console.log(await page.evaluate(() => {
   document.querySelector('video').pause();
   const root = document.querySelector('#bili-transcript-root').shadowRoot;
-  return { labels: [...new Set([...root.querySelectorAll('.person-name')].map(node => node.textContent))], paragraphs: root.querySelectorAll('.paragraph').length, highlights: root.querySelectorAll('.active-cue').length, seekCalls: window.__asrTest.seekCalls };
+  const { panel, cues, paragraphs, seekCalls } = window.__asrTest;
+  const highlights = root.querySelectorAll('.active-cue').length;
+  panel.body.scrollTop = panel.body.scrollHeight / 3;
+  const state = panel.getState();
+  if (!state.anchor) throw new Error('未捕获阅读锚点');
+  const translations = Object.fromEntries(cues.map(cue => [cue.id, '测试译文。']));
+  panel.clear();
+  panel.renderDocument({ cues, paragraphs }, { translations, bilingual: true });
+  panel.restoreState(state);
+  if (panel.getAnchor()?.cueId !== state.anchor.cueId || panel.view !== 'transcript') throw new Error('双语布局未恢复到原句');
+  if (!root.querySelector('.paragraph .translation + .bilingual-original')) throw new Error('双语排版异常');
+  panel.setActive(cues[0].id);
+  if (root.querySelectorAll('.active-cue').length < 2 || panel.getAnchor()?.cueId !== state.anchor.cueId || window.__asrTest.seekCalls !== seekCalls) throw new Error('双语高亮或恢复位置错误');
+  panel.setView('summary');
+  panel.restoreState(panel.getState());
+  if (panel.body.scrollTop !== 0) throw new Error('总结页应该从顶部开始');
+  return { paragraphs: paragraphs.length, highlights, seekCalls, anchor: state.anchor.cueId };
 }));
 console.log({ screenshot: await page.screenshot({ path: root + '/artifacts/asr-sidebar-preview.png' }) });
 await task.finish({ keep: [] });

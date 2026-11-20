@@ -10,6 +10,8 @@ const source = (await readFile(new URL('../extension/app.js', import.meta.url), 
 const flush = () => new Promise(resolve => setImmediate(resolve));
 const plain = value => JSON.parse(JSON.stringify(value));
 const resultKey = 'asr-document:v1:BVexample:1';
+const readingKey = 'asr-panel-state:v1:BVexample:1';
+const translationKey = 'asr-translation:zh-CN:v1:BVexample:1';
 const avatarKey = 'asr-avatars:v1:BVexample:1';
 const context0 = { key: 'BVexample:1', bvid: 'BVexample', cid: '1', part: 1, title: '测试', partTitle: '上' };
 function documentData() {
@@ -27,10 +29,14 @@ async function environment({ cached = true } = {}) {
   let agentAnalyze = async () => {};
   let agentCancel = () => {};
   let agentOptions;
+  let translate = () => assert.fail('unexpected translation');
   class Panel {
     constructor(_style, handlers) { this.handlers = handlers; this.aside = { insertBefore() {} }; this.isOpen = true; this.activeCalls = []; }
     setAvailable(v) { this.available = v; } setContext(v) { this.context = v; } clear() { this.rendered = null; this.active = null; }
-    setStatus(m, o = {}) { this.status = m; this.statusOptions = o; } renderDocument(v) { this.rendered = v; }
+    setStatus(m, o = {}) { this.status = m; this.statusOptions = o; } renderDocument(v, options) { this.rendered = v; this.bilingual = Boolean(options?.bilingual && options.translations); this.translations = options?.translations; }
+    restoreState({ manualReading, ...state }) { this.reading = { ...state, bilingual: this.bilingual }; }
+    getState() { return this.reading; }
+    setTranslationStatus(pending, message) { this.translationStatus = { pending, message }; }
     setFollow(v) { this.follow = v; } setActive(v) { this.active = v; this.activeCalls.push(v); }
     setTaskState(v) { this.taskState = v; } setSummary(v) { this.summary = v; }
   }
@@ -42,6 +48,7 @@ async function environment({ cached = true } = {}) {
     throw new Error(`Unexpected request: ${action}`);
   };
   const scope = {
+    createAgentClient: () => ({ translate }),
     loadPageAudio, createAgentView: options => { agentOptions = options; return { host: {}, analyze: () => agentAnalyze(options), cancel: () => agentCancel(options) }; },
     createTabBridge: () => request, TranscriptPanel: Panel, activeCueAt,
     readStored: async key => { reads.push(key); return storage.get(key); },
@@ -54,6 +61,7 @@ async function environment({ cached = true } = {}) {
   vm.runInNewContext(`${source}\nglobalThis.hooks = { load, syncContext, updatePlayback, panel, getData: () => documentData };`, scope);
   await flush();
   return { ...scope.hooks, storage, calls, reads, writes, messages, intervals, getAgentOptions: () => agentOptions,
+    setTranslate: fn => { translate = fn; },
     setAgentAnalyze: fn => { agentAnalyze = fn; }, setAgentCancel: fn => { agentCancel = fn; }, setPlayback: fn => { playback = fn; }, setSeek: fn => { seek = fn; },
     emit: (name, ...args) => listeners[name](...args), switchTab: (id, supported = true) => { tabId = id; available = supported; context = { ...context, tabId: id }; }
   };
@@ -62,7 +70,7 @@ async function environment({ cached = true } = {}) {
 test('startup restores cached document without cloud calls or key reads', async () => {
   const app = await environment();
   assert.deepEqual(plain(app.getData()), { ...documentData(), avatars: {} });
-  assert.deepEqual(app.reads, ['settings', resultKey, avatarKey]);
+  assert.deepEqual(app.reads, ['settings', resultKey, avatarKey, readingKey, translationKey]);
   assert.deepEqual(app.calls.map(c => c.action), ['snapshot', 'playback']);
   assert.equal(app.messages.length, 0);
 });
@@ -121,4 +129,49 @@ test('switching tabs cancels analysis and prevents stale rendering', async () =>
   const app = await environment(); let cancelled = 0; app.setAgentCancel(() => { cancelled++; });
   app.panel.handlers.cancelTask(); app.switchTab(20); app.emit('onActivated', { tabId: 20, windowId: 1 }); await flush();
   assert.ok(cancelled >= 1); assert.equal(app.getData().context.tabId, 20);
+});
+
+
+test('leaving a video saves its transcript anchor and returning restores the tab without seeking', async () => {
+  const app = await environment({ cached: { ...documentData(), agentResult: { summary: '上次摘要' } } });
+  assert.equal(app.panel.reading.view, 'summary');
+  const state = { view: 'transcript', anchor: { cueId: '1', offset: 8, translated: false }, bilingual: false };
+  app.panel.reading = state;
+  app.panel.handlers.scroll();
+  app.switchTab(20, false); app.emit('onActivated', { tabId: 20, windowId: 1 }); await flush();
+  assert.deepEqual(app.storage.get(readingKey), state);
+  app.switchTab(10); app.emit('onActivated', { tabId: 10, windowId: 1 }); await flush();
+  assert.deepEqual(plain(app.panel.reading), state);
+  assert.ok(!app.calls.some(call => call.action === 'seek'));
+});
+
+test('returning to the summary remembers the tab and separately keeps the transcript anchor', async () => {
+  const app = await environment({ cached: { ...documentData(), agentResult: { summary: '上次摘要' } } });
+  const state = { view: 'summary', anchor: { cueId: '1', offset: 8, translated: false }, bilingual: false };
+  app.panel.reading = state;
+  app.panel.handlers.state();
+  app.switchTab(20, false); app.emit('onActivated', { tabId: 20, windowId: 1 }); await flush();
+  app.switchTab(10); app.emit('onActivated', { tabId: 10, windowId: 1 }); await flush();
+  assert.deepEqual(plain(app.panel.reading), state);
+  assert.ok(!app.calls.some(call => call.action === 'seek'));
+});
+
+test('translation is lazy, keeps the anchor and restores from the per-video cache', async () => {
+  const app = await environment();
+  let requests = 0;
+  app.setTranslate(async cues => {
+    requests++;
+    assert.deepEqual(plain(cues), [{ id: '1', text: '第一句。' }]);
+    return { translations: { '1': '译文。' } };
+  });
+  app.panel.reading = { view: 'transcript', anchor: { cueId: '1', offset: 8 }, bilingual: false };
+  await app.panel.handlers.translate();
+  assert.equal(requests, 1);
+  assert.equal(app.panel.bilingual, true);
+  assert.equal(app.panel.reading.anchor.cueId, '1');
+  assert.equal(app.getData().cues[0].text, '第一句。');
+  app.switchTab(20, false); app.emit('onActivated', { tabId: 20, windowId: 1 }); await flush();
+  app.switchTab(10); app.emit('onActivated', { tabId: 10, windowId: 1 }); await flush();
+  assert.equal(app.panel.bilingual, true);
+  assert.equal(requests, 1);
 });

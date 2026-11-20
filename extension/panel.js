@@ -74,6 +74,11 @@ export class TranscriptPanel {
     this.retry.onclick = () => handlers.refresh();
     this.retry.hidden = true;
     this.status.append(this.statusText, this.retry);
+    this.translationBar = element('div', 'translation-bar');
+    this.translationButton = element('button', 'tool-button', '显示中文译文');
+    this.translationButton.onclick = () => handlers.translate();
+    this.translationBar.append(this.translationButton);
+    this.hasTranscript = false;
     this.body = element('div', 'body');
     this.body.tabIndex = 0;
     this.body.setAttribute('aria-label', '逐字稿正文');
@@ -82,6 +87,9 @@ export class TranscriptPanel {
     this.body.append(this.transcript, this.summary);
     this.summary.hidden = true;
     // 用户滚动才暂停跟随，程序滚动不影响。
+    this.body.addEventListener('scroll', () => {
+      if (!this.transcript.hidden) this.handlers.scroll?.();
+    }, { passive: true });
     this.body.addEventListener('wheel', () => this.setFollow(false), { passive: true });
     this.body.addEventListener('touchmove', () => this.setFollow(false), { passive: true });
     this.body.addEventListener('pointerdown', event => {
@@ -98,14 +106,14 @@ export class TranscriptPanel {
     this.followButton = element('button', 'follow-button', '跟随播放中');
     this.followButton.setAttribute('aria-pressed', 'true');
     this.followButton.onclick = () => {
-      this.setFollow(!this.follow);
+      this.setFollow(this.manualReading || !this.follow);
       if (this.follow) this.scrollToActive();
     };
     footer.append(this.followButton);
-    this.aside.append(this.title, this.nav, this.taskStatus, this.status, this.body, footer);
+    this.aside.append(this.title, this.nav, this.taskStatus, this.status, this.translationBar, this.body, footer);
     root.append(this.aside);
     document.body.append(this.host);
-    this.setView('transcript');
+    this.setView('transcript', { persist: false });
   }
 
   get isOpen() { return true; }
@@ -147,19 +155,27 @@ export class TranscriptPanel {
   clear() {
     this.setTaskState();
     this.transcript.replaceChildren();
+    this.hasTranscript = false;
+    this.bilingual = false;
+    this.readingAnchor = null;
+    this.manualReading = false;
+    this.setTranslationStatus(false);
     this.summary.replaceChildren();
     this.activeCue = null;
     this.activeParagraph = null;
     this.cueNodes = new Map();
     this.paragraphNodes = new Map();
-    this.setView('transcript');
+    this.setView('transcript', { persist: false });
   }
 
-  renderDocument({ cues, paragraphs, people = {}, avatars = {} }) {
+  renderDocument({ cues, paragraphs, people = {}, avatars = {} }, { translations, bilingual = false } = {}) {
     this.cueNodes = new Map();
     this.paragraphNodes = new Map();
     this.activeCue = null;
     this.activeParagraph = null;
+    this.hasTranscript = cues.length > 0;
+    this.bilingual = bilingual && Boolean(translations);
+    const translatedIds = new Set();
     const cuesById = new Map(cues.map(cue => [cue.id, cue]));
     const fragment = document.createDocumentFragment();
     for (const paragraph of paragraphs) {
@@ -188,34 +204,21 @@ export class TranscriptPanel {
         cueId: range.cueId, text: cuesById.get(range.cueId).text.slice(range.start, range.end)
       }));
       for (const run of buildSentenceRuns(fragments, cues)) {
-        const sentence = element('span', 'sentence');
-        sentence.tabIndex = 0;
-        sentence.setAttribute('role', 'button');
-        sentence.setAttribute('aria-label', `从 ${formatTime(run.startMs)} 播放：${run.text}`);
-        sentence.title = `点击从 ${formatTime(run.startMs)} 播放；拖选可复制文字`;
-        sentence.onclick = event => {
-          const selection = this.host.shadowRoot.getSelection?.() || window.getSelection();
-          const dragged = event.detail > 0 && this.textPress && Math.hypot(event.clientX - this.textPress.x, event.clientY - this.textPress.y) > 5;
-          if (dragged || event.detail > 1 || (selection && !selection.isCollapsed)) return;
-          this.handlers.seek(run.startMs, { play: true });
-        };
-        sentence.onkeydown = event => {
-          if (event.key !== 'Enter' && event.key !== ' ') return;
-          event.preventDefault();
-          event.stopPropagation();
-          this.handlers.seek(run.startMs, { play: true });
-        };
-        for (const part of run.fragments) {
-          const span = element('span', 'cue', part.text);
-          span.dataset.cueId = part.cueId;
-          sentence.append(span);
-          const nodes = this.cueNodes.get(part.cueId) || [];
-          nodes.push({ span, paragraphId: paragraph.id });
-          this.cueNodes.set(part.cueId, nodes);
-        }
-        text.append(sentence);
+        text.append(this.sentenceNode(run.startMs, run.fragments, paragraph.id));
       }
-      article.append(meta, text);
+      article.append(meta);
+      if (this.bilingual) {
+        const translated = element('p', 'paragraph-text translation');
+        for (const { cueId } of fragments) {
+          if (translatedIds.has(cueId) || !Object.hasOwn(translations, cueId)) continue;
+          translatedIds.add(cueId);
+          const cue = cuesById.get(cueId);
+          translated.append(this.sentenceNode(cue.startMs, [{ cueId, text: translations[cueId] }], paragraph.id));
+        }
+        if (translated.childNodes.length) article.append(translated);
+        text.classList.add('bilingual-original');
+      }
+      article.append(text);
       fragment.append(article);
       this.paragraphNodes.set(paragraph.id, article);
     }
@@ -223,17 +226,93 @@ export class TranscriptPanel {
     this.body.scrollTop = 0;
   }
 
-  setView(view) {
+  sentenceNode(startMs, fragments, paragraphId) {
+    const sentence = element('span', 'sentence');
+    const text = fragments.map(part => part.text).join('');
+    sentence.tabIndex = 0;
+    sentence.setAttribute('role', 'button');
+    sentence.setAttribute('aria-label', `从 ${formatTime(startMs)} 播放：${text}`);
+    sentence.title = `点击从 ${formatTime(startMs)} 播放；拖选可复制文字`;
+    sentence.onclick = event => {
+      const selection = this.host.shadowRoot.getSelection?.() || window.getSelection();
+      const dragged = event.detail > 0 && this.textPress && Math.hypot(event.clientX - this.textPress.x, event.clientY - this.textPress.y) > 5;
+      if (dragged || event.detail > 1 || (selection && !selection.isCollapsed)) return;
+      this.handlers.seek(startMs, { play: true });
+    };
+    sentence.onkeydown = event => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      event.stopPropagation();
+      this.handlers.seek(startMs, { play: true });
+    };
+    for (const part of fragments) {
+      const span = element('span', 'cue', part.text);
+      span.dataset.cueId = part.cueId;
+      sentence.append(span);
+      const nodes = this.cueNodes.get(part.cueId) || [];
+      nodes.push({ span, paragraphId });
+      this.cueNodes.set(part.cueId, nodes);
+    }
+    return sentence;
+  }
+
+  setTranslationStatus(pending, message) {
+    this.translationButton.disabled = pending;
+    this.translationButton.textContent = message || (pending ? '正在翻译…' : this.bilingual ? '隐藏中文译文' : '显示中文译文');
+    this.translationButton.setAttribute('aria-pressed', String(Boolean(this.bilingual)));
+  }
+
+  setView(view, { persist = true } = {}) {
     const summary = view === 'summary';
+    if (persist && this.view === view) return;
+    if (persist && this.view === 'transcript') this.readingAnchor = this.getAnchor();
+    this.view = view;
     this.summary.hidden = !summary;
     this.transcript.hidden = summary;
+    this.translationBar.hidden = summary || !this.hasTranscript;
     this.footer.hidden = summary;
     this.body.scrollTop = 0;
-    if (!summary && this.follow) this.scrollToActive();
+    if (persist && !summary) this.scrollToAnchor(this.readingAnchor);
     this.summaryTab.classList.toggle('active', summary);
     this.transcriptTab.classList.toggle('active', !summary);
     this.summaryTab.setAttribute('aria-pressed', String(summary));
     this.transcriptTab.setAttribute('aria-pressed', String(!summary));
+    if (persist) this.handlers.state?.();
+  }
+
+  getAnchor() {
+    if (this.body.scrollTop <= 0) return null;
+    const top = this.body.getBoundingClientRect().top;
+    for (const span of this.transcript.querySelectorAll('.cue')) {
+      const rect = span.getBoundingClientRect();
+      if (rect.bottom > top) return { cueId: span.dataset.cueId, translated: Boolean(span.closest('.translation')), offset: Math.max(0, top - rect.top) };
+    }
+    return null;
+  }
+
+  scrollToAnchor(anchor) {
+    if (!anchor || this.transcript.hidden) return;
+    const nodes = this.cueNodes?.get(anchor.cueId);
+    const span = nodes?.find(({ span }) => Boolean(span.closest('.translation')) === anchor.translated)?.span || nodes?.[0]?.span;
+    if (span) {
+      const rect = span.getBoundingClientRect();
+      this.body.scrollTop += rect.top - this.body.getBoundingClientRect().top + Math.min(anchor.offset || 0, Math.max(0, rect.height - 1));
+    }
+  }
+
+  getState() {
+    return { view: this.view, anchor: this.view === 'transcript' ? this.getAnchor() : this.readingAnchor, bilingual: Boolean(this.bilingual) };
+  }
+
+  restoreState(state) {
+    this.readingAnchor = state.anchor || null;
+    this.manualReading = Boolean(state.anchor || state.scrollTop > 0 || state.manualReading);
+    this.setView(state.view, { persist: false });
+    if (this.view === 'transcript') {
+      if (this.readingAnchor) this.scrollToAnchor(this.readingAnchor);
+      else if (Number.isFinite(state.scrollTop)) this.body.scrollTop = state.scrollTop;
+    }
+    this.setFollow(this.follow, false);
   }
 
   setSummary(summary) {
@@ -241,14 +320,14 @@ export class TranscriptPanel {
     const text = typeof summary === 'string' ? summary : summary?.overview;
     if (text) this.summary.append(element('p', '', text));
     if (summary?.keyPoints) for (const point of summary.keyPoints) this.summary.append(element('p', '', `• ${point.text || point}`));
-    this.setView('summary');
   }
 
   setFollow(follow, persist = true) {
     const changed = this.follow !== follow;
+    if (persist) this.manualReading = false;
     this.follow = follow;
-    this.followButton.textContent = follow ? '跟随播放中' : '恢复跟随';
-    this.followButton.setAttribute('aria-pressed', String(follow));
+    this.followButton.textContent = follow && !this.manualReading ? '跟随播放中' : '恢复跟随';
+    this.followButton.setAttribute('aria-pressed', String(follow && !this.manualReading));
     if (persist && changed) this.handlers.follow(follow);
   }
 
@@ -261,7 +340,7 @@ export class TranscriptPanel {
     this.activeCue = cueId;
     this.activeParagraph = current[0]?.paragraphId;
     this.paragraphNodes?.get(this.activeParagraph)?.classList.add('active-paragraph');
-    if (this.follow) this.scrollToActive();
+    if (this.follow && !this.manualReading) this.scrollToActive();
   }
 
   scrollToActive() {
